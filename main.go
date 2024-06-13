@@ -1,20 +1,22 @@
 package main
 
 import (
-  "os"
+	"github.com/bosley/nerv-go"
+	"internal/reaper"
 	"log/slog"
-//  "internal/reaper"
+	"os"
+	"sync"
 )
 
-type ModuleData struct {
-  // Create a structure that holds the 
-  
+const (
+	appDebugExtra = true
 
-  // *nerv.Module
-  // []nerv.Consumers
-  // topic configuration
+	defaultAppGracefulShutdownSecs = 5
+)
+
+type AppConfig struct {
+	Reaper reaper.Config
 }
-
 
 func main() {
 	slog.SetDefault(
@@ -24,6 +26,46 @@ func main() {
 					Level: slog.LevelDebug,
 				})))
 
+	appWaitGroup := new(sync.WaitGroup)
 
-  slog.Debug("OI")
+	appConfig := &AppConfig{
+		Reaper: reaper.Config{
+			WaitGroup:    appWaitGroup,
+			ShutdownSecs: defaultAppGracefulShutdownSecs,
+		},
+	}
+
+	eventEngine := CreateEngine()
+
+	PopulateModules(eventEngine, appConfig)
+
+	slog.Debug("OI")
+}
+
+func CreateEngine() *nerv.Engine {
+
+	engine := nerv.NewEngine()
+
+	if !appDebugExtra {
+		return engine
+	}
+
+	createCallback := func(id string) nerv.EventRecvr {
+		return func(event *nerv.Event) {
+			slog.Debug(
+				"nerv engine cb",
+				"cb id", id,
+				"topic", event.Topic,
+				"prod", event.Producer,
+				"spawned", event.Spawned)
+		}
+	}
+
+	return engine.WithCallbacks(
+		nerv.EngineCallbacks{
+			RegisterCb: createCallback("registration"),
+			NewTopicCb: createCallback("new_topic"),
+			ConsumeCb:  createCallback("consumed"),
+			SubmitCb:   createCallback("submission"),
+		})
 }
