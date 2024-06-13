@@ -89,7 +89,7 @@ func buildModReaper(config reaper.Config) ModuleData {
 
 	consumers := []nerv.Consumer{
 		buildLoggingConsumer(channel, func(event *nerv.Event) {
-			slog.Debug("shutdown immenent",
+			slog.Debug("shutdown imminent",
 				"sec-remaining",
 				event.Data.(*reaper.ReaperMsg).SecondsRemaining)
 		}),

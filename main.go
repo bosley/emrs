@@ -18,6 +18,13 @@ type AppConfig struct {
 	Reaper reaper.Config
 }
 
+func must(e error) {
+	if e != nil {
+		slog.Error(e.Error())
+		os.Exit(-1)
+	}
+}
+
 func main() {
 	slog.SetDefault(
 		slog.New(
@@ -39,7 +46,11 @@ func main() {
 
 	PopulateModules(eventEngine, appConfig)
 
-	slog.Debug("OI")
+	must(eventEngine.Start())
+
+	appWaitGroup.Wait()
+
+	must(eventEngine.Stop())
 }
 
 func CreateEngine() *nerv.Engine {
