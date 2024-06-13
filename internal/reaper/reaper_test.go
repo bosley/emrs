@@ -1,14 +1,14 @@
 package reaper
 
 import (
-  "os"
-  "fmt"
-  "sync"
-  "time"
-  "syscall"
-  "testing"
-  "log/slog"
+	"fmt"
 	"github.com/bosley/nerv-go"
+	"log/slog"
+	"os"
+	"sync"
+	"syscall"
+	"testing"
+	"time"
 )
 
 func TestReaper(t *testing.T) {
@@ -20,20 +20,20 @@ func TestReaper(t *testing.T) {
 					Level: slog.LevelDebug,
 				})))
 
-  shutdownSec   := 5
-  shutdownAlertRecv := 0
-  shutdownTopic := "emrs.internal.shutdown"
+	shutdownSec := 5
+	shutdownAlertRecv := 0
+	shutdownTopic := "emrs.internal.shutdown"
 
-  wg := new(sync.WaitGroup)
+	wg := new(sync.WaitGroup)
 
-  config := Config {
-    WaitGroup:    wg,
-    ShutdownSecs: shutdownSec,
-  }
+	config := Config{
+		WaitGroup:    wg,
+		ShutdownSecs: shutdownSec,
+	}
 
-  reaper := New(config)
+	reaper := New(config)
 
-  engine := nerv.NewEngine()
+	engine := nerv.NewEngine()
 
 	topic := nerv.NewTopic(shutdownTopic).
 		UsingDirect().
@@ -42,11 +42,11 @@ func TestReaper(t *testing.T) {
 	consumers := []nerv.Consumer{
 		nerv.Consumer{
 			Id: "emrs.internal.watchdog.reaper",
-      Fn: func (event *nerv.Event) {
-        slog.Debug("shutdown event", "sec-remaining", event.Data.(*ReaperMsg).SecondsRemaining)
-        shutdownAlertRecv += 1
-      },
-    },
+			Fn: func(event *nerv.Event) {
+				slog.Debug("shutdown event", "sec-remaining", event.Data.(*ReaperMsg).SecondsRemaining)
+				shutdownAlertRecv += 1
+			},
+		},
 	}
 
 	if err := engine.UseModule(
@@ -61,14 +61,14 @@ func TestReaper(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-  time.Sleep(1 * time.Second)
+	time.Sleep(1 * time.Second)
 
-  fmt.Println("sending SIGINT")
+	fmt.Println("sending SIGINT")
 
-  syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
 
-  // No _need_ to wait here, Stop() fn of reaper waits on the
-  // group when the module is shutdown
+	// No _need_ to wait here, Stop() fn of reaper waits on the
+	// group when the module is shutdown
 
 	fmt.Println("stopping engine")
 	if err := engine.Stop(); err != nil {
@@ -77,7 +77,7 @@ func TestReaper(t *testing.T) {
 
 	fmt.Println("[ENGINE STOPPED]")
 
-  if shutdownAlertRecv != shutdownSec {
-    t.Fatal("failed to receive countdown timer")
-  }
+	if shutdownAlertRecv != shutdownSec {
+		t.Fatal("failed to receive countdown timer")
+	}
 }

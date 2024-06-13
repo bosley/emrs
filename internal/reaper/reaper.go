@@ -10,48 +10,47 @@
 package reaper
 
 import (
-	"sync"
-  "time"
-	"syscall"
-  "os"
-	"os/signal"
 	"github.com/bosley/nerv-go"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 )
 
 const (
-  ReturnCodeForceKill = 42
+	ReturnCodeForceKill = 42
 )
 
 // Message type sent on event-to-topic from module
 type ReaperMsg struct {
-  SecondsRemaining int
+	SecondsRemaining int
 }
 
 // Configuration for the reaper module;
 // The waitgroup can be used to wait and ensure that the
-// 
 type Config struct {
-  WaitGroup      *sync.WaitGroup
-  ShutdownSecs   int
+	WaitGroup    *sync.WaitGroup
+	ShutdownSecs int
 }
 
 type Reaper struct {
-  waitGroup      *sync.WaitGroup
-  shutdownSecs   int
-  submitter      *nerv.ModuleSubmitter
+	waitGroup    *sync.WaitGroup
+	shutdownSecs int
+	submitter    *nerv.ModuleSubmitter
 }
 
 // Create a reaper pointer, which is a valid nerv.Module
 func New(cfg Config) *Reaper {
-  return &Reaper{
-    waitGroup:      cfg.WaitGroup,
-    shutdownSecs:   cfg.ShutdownSecs,
-  }
+	return &Reaper{
+		waitGroup:    cfg.WaitGroup,
+		shutdownSecs: cfg.ShutdownSecs,
+	}
 }
 
 // Trigger reaper shutdown from anywhere if running
 func Interrupt() {
-  syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
 }
 
 func (r *Reaper) Start() error {
@@ -64,36 +63,36 @@ func (r *Reaper) Start() error {
 		sig := <-signalChannel
 		switch sig {
 		case os.Interrupt:
-      r.sigShutdown()
+			r.sigShutdown()
 		case syscall.SIGTERM:
 			r.sigKill()
-    default:
-      return
+		default:
+			return
 		}
 	}()
-  return nil
+	return nil
 }
 
 func (r *Reaper) Shutdown() {
-  Interrupt()
-  r.waitGroup.Wait()
+	Interrupt()
+	r.waitGroup.Wait()
 }
 
 func (r *Reaper) SetSubmitter(submitter *nerv.ModuleSubmitter) {
-  r.submitter = submitter
+	r.submitter = submitter
 }
 
 func (r *Reaper) sigShutdown() {
 	t := r.shutdownSecs
 	for t != 0 {
-    r.submitter.SubmitData(&ReaperMsg{
-      SecondsRemaining: t,
-    })
+		r.submitter.SubmitData(&ReaperMsg{
+			SecondsRemaining: t,
+		})
 		t -= 1
 		time.Sleep(1 * time.Second)
 	}
 }
 
 func (r *Reaper) sigKill() {
-  os.Exit(ReturnCodeForceKill)
+	os.Exit(ReturnCodeForceKill)
 }
