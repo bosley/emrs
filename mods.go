@@ -65,23 +65,6 @@ func PopulateModules(engine *nerv.Engine, config *AppConfig) error {
 	return nil
 }
 
-func buildLoggingConsumer(channelName string, action nerv.EventRecvr) nerv.Consumer {
-
-	consumerId := formatWatchdog(
-		strings.Join([]string{
-			channelName,
-			"logger",
-		}, "."))
-
-	return nerv.Consumer{
-		Id: consumerId,
-		Fn: func(event *nerv.Event) {
-			slog.Debug("logging-consumer", "id", consumerId)
-			action(event)
-		},
-	}
-}
-
 func buildModWebUi(config webui.Config) ModuleData {
 
 	moduleName := "webui"
@@ -124,11 +107,14 @@ func buildModReaper(config reaper.Config) ModuleData {
 		UsingBroadcast()
 
 	consumers := []nerv.Consumer{
-		buildLoggingConsumer(channel, func(event *nerv.Event) {
-			slog.Debug("shutdown imminent",
-				"sec-remaining",
-				event.Data.(*reaper.ReaperMsg).SecondsRemaining)
-		}),
+		nerv.Consumer{
+			Id: strings.Join([]string{channel, "notice"}, "."),
+			Fn: func(event *nerv.Event) {
+				slog.Debug("shutdown imminent",
+					"seconds",
+					event.Data.(*reaper.ReaperMsg).SecondsRemaining)
+			},
+		},
 	}
 
 	return ModuleData{

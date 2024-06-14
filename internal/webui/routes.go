@@ -5,6 +5,13 @@ import (
 )
 
 func (ui *WebUi) routeHome(c *gin.Context) {
+
+	// For testing
+	ui.submitter.SubmitData(&MsgCommand{
+		Type: MsgTypeInfo,
+		Msg:  "HOME PAGE HIT",
+	})
+
 	c.HTML(200, "index.html", gin.H{
 		"title":   "E.M.R.S",
 		"message": "WORK IN PROGRESS",

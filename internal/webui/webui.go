@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -19,6 +20,10 @@ import (
 const (
 	DefaultWebUiAddr = "127.0.0.1:8080"
 	DefaultWebUiMode = gin.DebugMode
+)
+
+const (
+	webAssetDir = "internal/webui/static"
 )
 
 var ErrAlreadyStarted = errors.New("webui already started")
@@ -55,8 +60,8 @@ func New(config Config) *WebUi {
 }
 
 func (ui *WebUi) initStatics() {
-	ui.ginEng.LoadHTMLGlob("web/templates/*.html")
-	ui.ginEng.Static("/css", "web/templates/css")
+	ui.ginEng.LoadHTMLGlob(strings.Join([]string{webAssetDir, "templates/*.html"}, "/"))
+	ui.ginEng.Static("/css", strings.Join([]string{webAssetDir, "templates/css"}, "/"))
 }
 
 func (ui *WebUi) initRoutes() {

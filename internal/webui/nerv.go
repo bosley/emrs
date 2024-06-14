@@ -6,6 +6,7 @@ const (
 	MsgTypeLayer
 	MsgTypeSignal
 	MsgTypeAttribute
+	MsgTypeInfo
 )
 
 const (
