@@ -4,6 +4,7 @@ import (
 	"github.com/bosley/nerv-go"
 	"internal/reaper"
 	"internal/vault"
+	"internal/webui"
 	"log/slog"
 	"os"
 	"sync"
@@ -16,6 +17,7 @@ const (
 
 type AppConfig struct {
 	Vault  *vault.Config
+	WebUi  webui.Config
 	Reaper reaper.Config
 }
 
@@ -24,7 +26,6 @@ type App struct {
 	engine *nerv.Engine
 	config *AppConfig
 	vault  *vault.Vault
-	webUi  *WebUi
 }
 
 func main() {
@@ -35,23 +36,31 @@ func main() {
 					Level: slog.LevelDebug,
 				})))
 
+	// These will be CLI args/ config files
+	webUiAddr := webui.DefaultWebUiAddr
+	webUiMode := webui.DefaultWebUiMode
+	vaultDbPath := defaultAppVaultPath
+	reaperGraceShutdown := defaultAppGracefulShutdownSecs
+
+	appEngine := nerv.NewEngine()
+
 	app := &App{
-		webUi: CreateWebUi(
-			defaultWebUiMode,
-			defaultWebUiAddr,
-		),
+		engine: appEngine,
 		config: &AppConfig{
 			Vault: &vault.Config{
-				DbPath: defaultAppVaultPath,
+				DbPath: vaultDbPath,
+			},
+			WebUi: webui.Config{
+				Engine:  appEngine,
+				Address: webUiAddr,
+				Mode:    webUiMode,
 			},
 			Reaper: reaper.Config{
 				WaitGroup:    new(sync.WaitGroup),
-				ShutdownSecs: defaultAppGracefulShutdownSecs,
+				ShutdownSecs: reaperGraceShutdown,
 			},
 		},
 	}
-
-	slog.Warn("TODO: NEED TO CONVERT WEB UI TO CONFORM TO NERV MODULE")
 
 	app.Exec()
 }
@@ -64,15 +73,12 @@ func must(e error) {
 }
 
 func (app *App) Exec() {
-	slog.Debug("app:run")
 
-	app.createEngine()
+	app.setupVault()
 
 	PopulateModules(app.engine, app.config)
 
 	must(app.engine.Start())
-
-	must(app.webUi.Start())
 
 	app.config.Reaper.WaitGroup.Wait()
 
@@ -83,16 +89,13 @@ func (app *App) Exec() {
 	}
 }
 
-func (app *App) createEngine() {
-
-	app.engine = nerv.NewEngine()
-
-	if app.config.Vault != nil {
-		app.setupVault()
-	}
-}
-
 func (app *App) setupVault() {
+
+	if app.config.Vault == nil {
+		slog.Debug("no vault configuration detected - skipping")
+		return
+	}
+
 	slog.Debug("vault config detected, setting up..")
 
 	app.vault = vault.New()

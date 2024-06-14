@@ -6,11 +6,14 @@ replace internal/reaper => ./internal/reaper
 
 replace internal/vault => ./internal/vault
 
+replace internal/webui => ./internal/webui
+
 require (
 	github.com/bosley/nerv-go v0.1.1
 	github.com/gin-gonic/gin v1.10.0
 	internal/reaper v0.0.0-00010101000000-000000000000
 	internal/vault v0.0.0-00010101000000-000000000000
+	internal/webui v0.0.0-00010101000000-000000000000
 )
 
 require (

@@ -7,6 +7,7 @@ package main
 import (
 	"github.com/bosley/nerv-go"
 	"internal/reaper"
+	"internal/webui"
 	"log/slog"
 	"strings"
 )
@@ -51,6 +52,7 @@ func PopulateModules(engine *nerv.Engine, config *AppConfig) error {
 	slog.Debug("populating nerv modules")
 	for idx, mod := range []ModuleData{
 		buildModReaper(config.Reaper),
+		buildModWebUi(config.WebUi),
 	} {
 		if err := engine.UseModule(
 			mod.Mod,
@@ -69,7 +71,7 @@ func buildLoggingConsumer(channelName string, action nerv.EventRecvr) nerv.Consu
 		strings.Join([]string{
 			channelName,
 			"logger",
-		}, ","))
+		}, "."))
 
 	return nerv.Consumer{
 		Id: consumerId,
@@ -80,9 +82,39 @@ func buildLoggingConsumer(channelName string, action nerv.EventRecvr) nerv.Consu
 	}
 }
 
+func buildModWebUi(config webui.Config) ModuleData {
+
+	moduleName := "webui"
+
+	channel := strings.Join([]string{moduleName, "command"}, ".")
+
+	publishingTopic := formatGroup(channel)
+
+	mod := webui.New(config)
+
+	topic := nerv.NewTopic(publishingTopic).
+		UsingBroadcast()
+
+	consumers := []nerv.Consumer{
+		nerv.Consumer{
+			Id: formatWatchdog(moduleName),
+			Fn: mod.ReceiveEvent,
+		},
+	}
+
+	return ModuleData{
+		Name:      moduleName,
+		Mod:       mod,
+		Consumers: consumers,
+		Topic:     topic,
+	}
+}
+
 func buildModReaper(config reaper.Config) ModuleData {
 
-	channel := "shutdown"
+	moduleName := "reaper"
+
+	channel := strings.Join([]string{moduleName, "kill"}, ".")
 
 	publishingTopic := formatGroup(channel)
 
@@ -100,7 +132,7 @@ func buildModReaper(config reaper.Config) ModuleData {
 	}
 
 	return ModuleData{
-		Name:      "reaper",
+		Name:      moduleName,
 		Mod:       mod,
 		Consumers: consumers,
 		Topic:     topic,
