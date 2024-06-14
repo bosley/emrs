@@ -14,6 +14,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -34,6 +35,11 @@ type Config struct {
 	Mode    string
 }
 
+type WebMetrics struct {
+	requests atomic.Uint64
+	// TODO:  avgLatency (see middleware.go)
+}
+
 type WebUi struct {
 	ginEng    *gin.Engine
 	nrvEng    *nerv.Engine
@@ -42,21 +48,44 @@ type WebUi struct {
 	running   bool
 	address   string
 	submitter *nerv.ModuleSubmitter
+	killOtw   atomic.Bool
+
+	metrics WebMetrics
 }
 
 func New(config Config) *WebUi {
+
 	gin.SetMode(config.Mode)
 
+	route := gin.New()
+
 	ui := &WebUi{
-		ginEng:  gin.New(),
 		nrvEng:  config.Engine,
 		wg:      new(sync.WaitGroup),
 		running: false,
 		address: config.Address,
 	}
+
+	ui.killOtw.Store(false)
+
+	route.Use(ui.ReaperMiddleware())
+
+	route.Use(ui.RequestProfiler())
+
+	ui.ginEng = route
+
 	ui.initRoutes()
+
 	ui.initStatics()
+
 	return ui
+}
+
+func (ui *WebUi) ShutdownWarning(t int) {
+
+	ui.killOtw.Store(true)
+
+	// We could say something about the time, but meh
 }
 
 func (ui *WebUi) initStatics() {
@@ -126,6 +155,20 @@ func (ui *WebUi) SetSubmitter(submitter *nerv.ModuleSubmitter) {
 
 func (ui *WebUi) ReceiveEvent(event *nerv.Event) {
 
-	slog.Debug("webui consumer has received an event!")
+	slog.Debug("webui:ReceiveEvent")
 
+	cmd, ok := event.Data.(*MsgCommand)
+	if !ok {
+		slog.Warn("webui failed to convert event to command")
+		return
+	}
+
+	switch cmd.Type {
+	case MsgTypeInfo:
+		ui.procCmdInfo(cmd.Msg.(*MsgInfo))
+		break
+	default:
+		slog.Warn("invalid command type for webui", "value", cmd.Type)
+		break
+	}
 }

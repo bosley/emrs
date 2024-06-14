@@ -19,6 +19,8 @@ const (
 	TopicGroupProducer  = "producer"
 )
 
+var AppReaper *reaper.Reaper
+
 type ModuleData struct {
 	Name      string
 	Mod       nerv.Module
@@ -51,7 +53,7 @@ func formatProducer(name string) string {
 func PopulateModules(engine *nerv.Engine, config *AppConfig) error {
 	slog.Debug("populating nerv modules")
 	for idx, mod := range []ModuleData{
-		buildModReaper(config.Reaper),
+		buildModReaper(config.Reaper), // Must come first (sets global)
 		buildModWebUi(config.WebUi),
 	} {
 		if err := engine.UseModule(
@@ -85,6 +87,8 @@ func buildModWebUi(config webui.Config) ModuleData {
 		},
 	}
 
+	AppReaper.AddListener(mod.ShutdownWarning)
+
 	return ModuleData{
 		Name:      moduleName,
 		Mod:       mod,
@@ -101,19 +105,17 @@ func buildModReaper(config reaper.Config) ModuleData {
 
 	publishingTopic := formatGroup(channel)
 
-	mod := reaper.New(config)
+	AppReaper = reaper.New(config)
+
+	mod := AppReaper
 
 	topic := nerv.NewTopic(publishingTopic).
 		UsingBroadcast()
 
 	consumers := []nerv.Consumer{
 		nerv.Consumer{
-			Id: strings.Join([]string{channel, "notice"}, "."),
-			Fn: func(event *nerv.Event) {
-				slog.Debug("shutdown imminent",
-					"seconds",
-					event.Data.(*reaper.ReaperMsg).SecondsRemaining)
-			},
+			Id: strings.Join([]string{channel, "consumer"}, "."),
+			Fn: mod.RecvKillCmd,
 		},
 	}
 

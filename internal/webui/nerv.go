@@ -1,18 +1,7 @@
 package webui
 
 const (
-	MsgTypeSector = iota
-	MsgTypeAsset
-	MsgTypeLayer
-	MsgTypeSignal
-	MsgTypeAttribute
-	MsgTypeInfo
-)
-
-const (
-	OpAdd = iota
-	OpDel
-	OpInfo
+	MsgTypeInfo = iota
 )
 
 // Wrapper for message in event
@@ -21,22 +10,6 @@ type MsgCommand struct {
 	Msg  interface{}
 }
 
-type MsgSector struct {
-	Op int
-}
-
-type MsgAsset struct {
-	Op int
-}
-
-type MsgLayer struct {
-	Op int
-}
-
-type MsgSignal struct {
-	Op int
-}
-
-type MsgAttribute struct {
-	Op int
+type MsgInfo struct {
+	Info string
 }

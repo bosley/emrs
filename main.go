@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	defaultAppGracefulShutdownSecs = 2
+	defaultAppGracefulShutdownSecs = 5
 	defaultAppVaultPath            = ".emrs.vault.db"
 )
 
