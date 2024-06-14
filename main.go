@@ -51,6 +51,8 @@ func main() {
 		},
 	}
 
+	slog.Warn("TODO: NEED TO CONVERT WEB UI TO CONFORM TO NERV MODULE")
+
 	app.Exec()
 }
 

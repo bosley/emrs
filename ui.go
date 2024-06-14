@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"github.com/bosley/nerv-go"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
@@ -20,7 +21,8 @@ const (
 )
 
 type WebUi struct {
-	engine  *gin.Engine
+	ginEng  *gin.Engine
+	nrvEng  *nerv.Engine
 	wg      *sync.WaitGroup
 	srv     *http.Server
 	running bool
@@ -29,7 +31,7 @@ type WebUi struct {
 
 func CreateWebUi(mode string, address string) *WebUi {
 	ui := &WebUi{
-		engine:  gin.New(),
+		ginEng:  gin.New(),
 		wg:      new(sync.WaitGroup),
 		running: false,
 		address: address,
@@ -49,7 +51,7 @@ func (ui *WebUi) Start() error {
 
 	ui.srv = &http.Server{
 		Addr:    ui.address,
-		Handler: ui.engine,
+		Handler: ui.ginEng,
 	}
 
 	ui.wg.Add(1)
@@ -88,14 +90,14 @@ func (ui *WebUi) Stop() {
 }
 
 func (ui *WebUi) initStatics() {
-	ui.engine.LoadHTMLGlob("web/templates/*.html")
-	ui.engine.Static("/css", "web/templates/css")
+	ui.ginEng.LoadHTMLGlob("web/templates/*.html")
+	ui.ginEng.Static("/css", "web/templates/css")
 
 }
 
 func (ui *WebUi) initRoutes() {
-	ui.engine.GET("/", ui.routeHome)
-	ui.engine.GET("/status", ui.routeStatus)
+	ui.ginEng.GET("/", ui.routeHome)
+	ui.ginEng.GET("/status", ui.routeStatus)
 }
 
 func (ui *WebUi) routeHome(c *gin.Context) {
