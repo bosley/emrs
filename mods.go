@@ -1,3 +1,7 @@
+/*
+  nerv-go modules supporting EMRS
+*/
+
 package main
 
 import (
