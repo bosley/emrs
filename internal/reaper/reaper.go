@@ -144,7 +144,7 @@ func (r *Reaper) sigKill() {
 func (r *Reaper) killCmd(event *nerv.Event) {
 	remaining := event.Data.(*ReaperMsg).SecondsRemaining
 
-	slog.Debug("shutdown imminent", "seconds", remaining)
+	slog.Warn("shutdown imminent", "seconds", remaining)
 
 	for _, fn := range r.listeners {
 		go fn(remaining)

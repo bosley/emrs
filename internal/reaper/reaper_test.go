@@ -27,17 +27,16 @@ func TestReaper(t *testing.T) {
 	wg := new(sync.WaitGroup)
 
 	config := Config{
-		WaitGroup:    wg,
-		ShutdownSecs: shutdownSec,
+		WaitGroup:       wg,
+		ShutdownSecs:    shutdownSec,
+		DesignatedTopic: shutdownTopic,
 	}
 
 	reaper := New(config)
 
 	engine := nerv.NewEngine()
 
-	topic := nerv.NewTopic(shutdownTopic).
-		UsingDirect().
-		UsingRoundRobinSelection()
+	topic := nerv.NewTopic(shutdownTopic)
 
 	consumers := []nerv.Consumer{
 		nerv.Consumer{
@@ -49,12 +48,11 @@ func TestReaper(t *testing.T) {
 		},
 	}
 
-	if err := engine.UseModule(
+	engine.UseModule(
 		reaper,
-		topic,
-		consumers); err != nil {
-		t.Fatalf("err:%v", err)
-	}
+		[]*nerv.TopicCfg{topic})
+
+	reaper.pane.SubscribeTo(shutdownTopic, consumers, true)
 
 	fmt.Println("starting engine")
 	if err := engine.Start(); err != nil {

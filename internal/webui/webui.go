@@ -20,7 +20,9 @@ import (
 
 const (
 	DefaultWebUiAddr = "127.0.0.1:8080"
-	DefaultWebUiMode = gin.DebugMode
+	ModeRelease      = gin.ReleaseMode
+	ModeDebug        = gin.DebugMode
+	DefaultWebUiMode = ModeDebug
 )
 
 const (

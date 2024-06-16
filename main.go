@@ -1,9 +1,9 @@
 package main
 
 import (
+	"flag"
 	"github.com/bosley/nerv-go"
 	"internal/reaper"
-	"internal/vault"
 	"internal/webui"
 	"log/slog"
 	"os"
@@ -12,11 +12,9 @@ import (
 
 const (
 	defaultAppGracefulShutdownSecs = 5
-	defaultAppVaultPath            = ".emrs.vault.db"
 )
 
 type AppConfig struct {
-	Vault  *vault.Config
 	WebUi  webui.Config
 	Reaper reaper.Config
 }
@@ -25,7 +23,6 @@ type App struct {
 	wg     *sync.WaitGroup
 	engine *nerv.Engine
 	config *AppConfig
-	vault  *vault.Vault
 }
 
 func main() {
@@ -36,30 +33,36 @@ func main() {
 					Level: slog.LevelDebug,
 				})))
 
-	// These will be CLI args/ config files
-	webUiAddr := webui.DefaultWebUiAddr
-	webUiMode := webui.DefaultWebUiMode
-	vaultDbPath := defaultAppVaultPath
-	reaperGraceShutdown := defaultAppGracefulShutdownSecs
+	webUiAddr := flag.String("addr", webui.DefaultWebUiAddr, "Address to bind Web UI to [address:port]")
+	releaseMode := flag.Bool("release", false, "Turn on debug mode")
+	gracefulSecs := flag.Int("grace", defaultAppGracefulShutdownSecs, "Graceful shutdown time (seconds)")
+	flag.Parse()
 
 	appEngine := nerv.NewEngine()
 
+	uiCfg := webui.Config{
+		Engine:  appEngine,
+		Address: *webUiAddr,
+		Mode:    webui.DefaultWebUiMode,
+	}
+
+	reaperCfg := reaper.Config{
+		WaitGroup:    new(sync.WaitGroup),
+		ShutdownSecs: *gracefulSecs,
+	}
+
+	appCfg := AppConfig{
+		WebUi:  uiCfg,
+		Reaper: reaperCfg,
+	}
+
+	if *releaseMode {
+		configureReleaseMode(&appCfg)
+	}
+
 	app := &App{
 		engine: appEngine,
-		config: &AppConfig{
-			Vault: &vault.Config{
-				DbPath: vaultDbPath,
-			},
-			WebUi: webui.Config{
-				Engine:  appEngine,
-				Address: webUiAddr,
-				Mode:    webUiMode,
-			},
-			Reaper: reaper.Config{
-				WaitGroup:    new(sync.WaitGroup),
-				ShutdownSecs: reaperGraceShutdown,
-			},
-		},
+		config: &appCfg,
 	}
 
 	app.Exec()
@@ -72,9 +75,18 @@ func must(e error) {
 	}
 }
 
-func (app *App) Exec() {
+func configureReleaseMode(cfg *AppConfig) {
+	slog.SetDefault(
+		slog.New(
+			slog.NewTextHandler(os.Stdout,
+				&slog.HandlerOptions{
+					Level: slog.LevelWarn,
+				})))
 
-	app.setupVault()
+	cfg.WebUi.Mode = webui.ModeRelease
+}
+
+func (app *App) Exec() {
 
 	PopulateModules(app.engine, app.config)
 
@@ -83,28 +95,4 @@ func (app *App) Exec() {
 	app.config.Reaper.WaitGroup.Wait()
 
 	must(app.engine.Stop())
-
-	if app.vault != nil {
-		app.vault.Stop()
-	}
-}
-
-func (app *App) setupVault() {
-
-	if app.config.Vault == nil {
-		slog.Debug("no vault configuration detected - skipping")
-		return
-	}
-
-	slog.Debug("vault config detected, setting up..")
-
-	app.vault = vault.New()
-
-	app.engine = app.engine.WithCallbacks(
-		nerv.EngineCallbacks{
-			RegisterCb: app.vault.Store,
-			NewTopicCb: app.vault.Store,
-			ConsumeCb:  app.vault.Store,
-			SubmitCb:   app.vault.Store,
-		})
 }
