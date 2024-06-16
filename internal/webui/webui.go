@@ -84,7 +84,7 @@ func New(config Config) *WebUi {
 
 	route.Use(ui.ReaperMiddleware())
 
-	//route.Use(ui.RequestProfiler())
+	route.Use(ui.RequestProfiler())
 
 	ui.ginEng = route
 
@@ -104,7 +104,7 @@ func (ui *WebUi) ShutdownWarning(t int) {
 
 func (ui *WebUi) initStatics() {
 	ui.ginEng.LoadHTMLGlob(strings.Join([]string{webAssetDir, "templates/*.html"}, "/"))
-	ui.ginEng.Static("/js", strings.Join([]string{webAssetDir, "js"}, "/"))
+	ui.ginEng.Static("/js", strings.Join([]string{webAssetDir, "js"}, "/emrs/"))
 }
 
 func (ui *WebUi) initRoutes() {
