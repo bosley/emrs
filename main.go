@@ -12,6 +12,8 @@ import (
 
 const (
 	defaultAppGracefulShutdownSecs = 5
+	defaultAppUser                 = "admin"
+	defaultAppPassword             = "admin"
 )
 
 type AppConfig struct {
@@ -26,6 +28,9 @@ type App struct {
 }
 
 func main() {
+
+	tempLoggedInUserId := "UUID-DEV" // TODO: Remove this. This is for dev auth sys, before DB setup
+
 	slog.SetDefault(
 		slog.New(
 			slog.NewTextHandler(os.Stdout,
@@ -36,6 +41,12 @@ func main() {
 	webUiAddr := flag.String("addr", webui.DefaultWebUiAddr, "Address to bind Web UI to [address:port]")
 	releaseMode := flag.Bool("release", false, "Turn on debug mode")
 	gracefulSecs := flag.Int("grace", defaultAppGracefulShutdownSecs, "Graceful shutdown time (seconds)")
+
+	// TODO: NOTE:
+	// Until we get vaults running and databases working we will use simple auth setup so we can
+	// get development underway but still have auth framed-in
+	username := flag.String("user", defaultAppUser, "Username to log in with")
+	password := flag.String("pass", defaultAppPassword, "Password to require for login")
 	flag.Parse()
 
 	appEngine := nerv.NewEngine()
@@ -44,6 +55,15 @@ func main() {
 		Engine:  appEngine,
 		Address: *webUiAddr,
 		Mode:    webui.DefaultWebUiMode,
+		AuthenticateUser: func(user string, pass string) *string {
+
+			// TODO: Actually check a vault for this pass, and
+			//       return the user's UUID if good
+			if user == *username && pass == *password {
+				return &tempLoggedInUserId
+			}
+			return nil
+		},
 	}
 
 	reaperCfg := reaper.Config{

@@ -1,0 +1,23 @@
+{{ define "nav" }}
+<!-- Nav -->
+    <nav class="container-fluid">
+      <ul>
+        <li>
+          <a href="/" class="contrast">
+            <strong> EMRS </strong>
+          {{if .NavData.LoggedIn}}
+          : {{ .NavData.UserId }}
+          {{end}}
+          </a>
+        </li>
+      </ul>
+      <ul>
+          {{if .NavData.LoggedIn}}
+            <li><a href="/emrs/dashboard">Dashboard</a></li>
+            <li><a href="/emrs/settings">Settings</a></li>
+            <li><a href="/logout">Logout</a></li>
+          {{end}}
+      </ul>
+    </nav>
+    <!-- ./ Nav -->
+  {{ end }}

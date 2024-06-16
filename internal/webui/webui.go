@@ -8,6 +8,8 @@ import (
 	"context"
 	"errors"
 	"github.com/bosley/nerv-go"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
@@ -32,10 +34,11 @@ const (
 var ErrAlreadyStarted = errors.New("webui already started")
 
 type Config struct {
-	Engine          *nerv.Engine
-	Address         string
-	Mode            string
-	DesignatedTopic string
+	Engine           *nerv.Engine
+	Address          string
+	Mode             string
+	DesignatedTopic  string
+	AuthenticateUser func(username string, password string) *string
 }
 
 type WebMetrics struct {
@@ -44,15 +47,16 @@ type WebMetrics struct {
 }
 
 type WebUi struct {
-	ginEng  *gin.Engine
-	nrvEng  *nerv.Engine
-	wg      *sync.WaitGroup
-	srv     *http.Server
-	running bool
-	address string
-	pane    *nerv.ModulePane
-	killOtw atomic.Bool
-	topic   string
+	ginEng     *gin.Engine
+	nrvEng     *nerv.Engine
+	wg         *sync.WaitGroup
+	srv        *http.Server
+	running    bool
+	address    string
+	pane       *nerv.ModulePane
+	killOtw    atomic.Bool
+	topic      string
+	authUserFn func(username string, password string) *string
 
 	metrics WebMetrics
 }
@@ -64,18 +68,23 @@ func New(config Config) *WebUi {
 	route := gin.New()
 
 	ui := &WebUi{
-		nrvEng:  config.Engine,
-		wg:      new(sync.WaitGroup),
-		running: false,
-		address: config.Address,
-		topic:   config.DesignatedTopic,
+		nrvEng:     config.Engine,
+		wg:         new(sync.WaitGroup),
+		running:    false,
+		address:    config.Address,
+		topic:      config.DesignatedTopic,
+		authUserFn: config.AuthenticateUser,
 	}
 
 	ui.killOtw.Store(false)
 
+	store := cookie.NewStore([]byte("some-badger-secret-here"))
+
+	route.Use(sessions.Sessions("emrs", store))
+
 	route.Use(ui.ReaperMiddleware())
 
-	route.Use(ui.RequestProfiler())
+	//route.Use(ui.RequestProfiler())
 
 	ui.ginEng = route
 
@@ -95,12 +104,22 @@ func (ui *WebUi) ShutdownWarning(t int) {
 
 func (ui *WebUi) initStatics() {
 	ui.ginEng.LoadHTMLGlob(strings.Join([]string{webAssetDir, "templates/*.html"}, "/"))
-	ui.ginEng.Static("/css", strings.Join([]string{webAssetDir, "templates/css"}, "/"))
+	ui.ginEng.Static("/js", strings.Join([]string{webAssetDir, "js"}, "/"))
 }
 
 func (ui *WebUi) initRoutes() {
-	ui.ginEng.GET("/", ui.routeHome)
-	ui.ginEng.GET("/status", ui.routeStatus)
+	ui.ginEng.GET("/", ui.routeIndex)
+	ui.ginEng.GET("/login", ui.routeLogin)
+	ui.ginEng.GET("/logout", ui.routeLogout)
+	ui.ginEng.POST("/auth", ui.routeAuth)
+
+	priv := ui.ginEng.Group("/emrs")
+	priv.Use(ui.EmrsAuth())
+	{
+		priv.GET("/status", ui.routeStatus)
+		priv.GET("/dashboard", ui.routeDashboard)
+		priv.GET("/settings", ui.routeSettings)
+	}
 }
 
 func (ui *WebUi) GetName() string {
