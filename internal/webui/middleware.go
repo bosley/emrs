@@ -54,7 +54,7 @@ func (ui *WebUi) record(data string) {
 		stamp := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d",
 			t.Year(), t.Month(), t.Day(),
 			t.Hour(), t.Minute(), t.Second())
-		ui.submitter.SubmitData(&MsgCommand{
+		ui.pane.SubmitTo(ui.topic, &MsgCommand{
 			Type: MsgTypeInfo,
 			Msg: &MsgInfo{
 				Info: fmt.Sprintf("%s| %s", stamp, data),

@@ -22,10 +22,9 @@ const (
 var AppReaper *reaper.Reaper
 
 type ModuleData struct {
-	Name      string
-	Mod       nerv.Module
-	Consumers []nerv.Consumer
-	Topic     *nerv.TopicCfg
+	Name   string
+	Mod    nerv.Module
+	Topics []*nerv.TopicCfg
 }
 
 func formatGroup(name string) string {
@@ -56,12 +55,10 @@ func PopulateModules(engine *nerv.Engine, config *AppConfig) error {
 		buildModReaper(config.Reaper), // Must come first (sets global)
 		buildModWebUi(config.WebUi),
 	} {
-		if err := engine.UseModule(
+		engine.UseModule(
 			mod.Mod,
-			mod.Topic,
-			mod.Consumers); err != nil {
-			return err
-		}
+			mod.Topics,
+		)
 		slog.Debug("loaded module", "name", mod.Name, "idx", idx)
 	}
 	return nil
@@ -75,25 +72,19 @@ func buildModWebUi(config webui.Config) ModuleData {
 
 	publishingTopic := formatGroup(channel)
 
+	config.DesignatedTopic = publishingTopic
+
 	mod := webui.New(config)
 
 	topic := nerv.NewTopic(publishingTopic).
 		UsingBroadcast()
 
-	consumers := []nerv.Consumer{
-		nerv.Consumer{
-			Id: formatWatchdog(moduleName),
-			Fn: mod.ReceiveEvent,
-		},
-	}
-
 	AppReaper.AddListener(mod.ShutdownWarning)
 
 	return ModuleData{
-		Name:      moduleName,
-		Mod:       mod,
-		Consumers: consumers,
-		Topic:     topic,
+		Name:   moduleName,
+		Mod:    mod,
+		Topics: []*nerv.TopicCfg{topic},
 	}
 }
 
@@ -105,6 +96,8 @@ func buildModReaper(config reaper.Config) ModuleData {
 
 	publishingTopic := formatGroup(channel)
 
+	config.DesignatedTopic = publishingTopic
+
 	AppReaper = reaper.New(config)
 
 	mod := AppReaper
@@ -112,17 +105,9 @@ func buildModReaper(config reaper.Config) ModuleData {
 	topic := nerv.NewTopic(publishingTopic).
 		UsingBroadcast()
 
-	consumers := []nerv.Consumer{
-		nerv.Consumer{
-			Id: strings.Join([]string{channel, "consumer"}, "."),
-			Fn: mod.RecvKillCmd,
-		},
-	}
-
 	return ModuleData{
-		Name:      moduleName,
-		Mod:       mod,
-		Consumers: consumers,
-		Topic:     topic,
+		Name:   moduleName,
+		Mod:    mod,
+		Topics: []*nerv.TopicCfg{topic},
 	}
 }

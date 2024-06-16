@@ -30,9 +30,10 @@ const (
 var ErrAlreadyStarted = errors.New("webui already started")
 
 type Config struct {
-	Engine  *nerv.Engine
-	Address string
-	Mode    string
+	Engine          *nerv.Engine
+	Address         string
+	Mode            string
+	DesignatedTopic string
 }
 
 type WebMetrics struct {
@@ -41,14 +42,15 @@ type WebMetrics struct {
 }
 
 type WebUi struct {
-	ginEng    *gin.Engine
-	nrvEng    *nerv.Engine
-	wg        *sync.WaitGroup
-	srv       *http.Server
-	running   bool
-	address   string
-	submitter *nerv.ModuleSubmitter
-	killOtw   atomic.Bool
+	ginEng  *gin.Engine
+	nrvEng  *nerv.Engine
+	wg      *sync.WaitGroup
+	srv     *http.Server
+	running bool
+	address string
+	pane    *nerv.ModulePane
+	killOtw atomic.Bool
+	topic   string
 
 	metrics WebMetrics
 }
@@ -64,6 +66,7 @@ func New(config Config) *WebUi {
 		wg:      new(sync.WaitGroup),
 		running: false,
 		address: config.Address,
+		topic:   config.DesignatedTopic,
 	}
 
 	ui.killOtw.Store(false)
@@ -98,10 +101,21 @@ func (ui *WebUi) initRoutes() {
 	ui.ginEng.GET("/status", ui.routeStatus)
 }
 
+func (ui *WebUi) GetName() string {
+	return "mod.webui"
+}
+
 func (ui *WebUi) Start() error {
 
 	slog.Info("webui:Start")
 
+	if err := ui.pane.SubscribeTo(ui.topic, []nerv.Consumer{
+		nerv.Consumer{
+			Id: ui.GetName(),
+			Fn: ui.NervEvent,
+		}}, true); err != nil {
+		return err
+	}
 	if ui.running {
 		return ErrAlreadyStarted
 	}
@@ -149,13 +163,13 @@ func (ui *WebUi) Shutdown() {
 	ui.wg = nil
 }
 
-func (ui *WebUi) SetSubmitter(submitter *nerv.ModuleSubmitter) {
-	ui.submitter = submitter
+func (ui *WebUi) RecvModulePane(pane *nerv.ModulePane) {
+	ui.pane = pane
 }
 
-func (ui *WebUi) ReceiveEvent(event *nerv.Event) {
+func (ui *WebUi) NervEvent(event *nerv.Event) {
 
-	slog.Debug("webui:ReceiveEvent")
+	slog.Debug("webui:NervEvent")
 
 	cmd, ok := event.Data.(*MsgCommand)
 	if !ok {
