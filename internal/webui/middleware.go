@@ -3,8 +3,22 @@ package webui
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"time"
 )
+
+func (ui *WebUi) EmrsAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if getLoggedInUser(c) == nil {
+			c.HTML(http.StatusUnauthorized, "denied.html", gin.H{
+				"NavData":    buildNavData(c),
+				"PageHeader": buildPageHeader("Access denied"),
+			})
+			c.Abort()
+			return
+		}
+	}
+}
 
 func (ui *WebUi) ReaperMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
