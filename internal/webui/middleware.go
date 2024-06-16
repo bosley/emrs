@@ -10,7 +10,11 @@ import (
 func (ui *WebUi) EmrsAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if getLoggedInUser(c) == nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			c.HTML(http.StatusUnauthorized, "denied.html", gin.H{
+				"NavData":    buildNavData(c),
+				"PageHeader": buildPageHeader("Access denied"),
+			})
+			c.Abort()
 			return
 		}
 	}

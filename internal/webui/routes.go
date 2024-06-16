@@ -11,6 +11,7 @@ import (
 
 const (
 	sessionKeyUserId = "user-id"
+	loginAttemptKey  = "login-failure"
 )
 
 func (ui *WebUi) routeIndex(c *gin.Context) {
@@ -21,9 +22,15 @@ func (ui *WebUi) routeIndex(c *gin.Context) {
 }
 
 func (ui *WebUi) routeLogin(c *gin.Context) {
+
+	_, ok := c.Get(loginAttemptKey)
+
+	slog.Debug("Looks like there was a previous login attempt")
+
 	c.HTML(200, "login.html", gin.H{
-		"PageHeader": buildPageHeader("Login"),
-		"NavData":    buildNavData(c),
+		"PageHeader":  buildPageHeader("Login"),
+		"NavData":     buildNavData(c),
+		"PrevAttempt": ok,
 	})
 }
 
@@ -36,6 +43,7 @@ func (ui *WebUi) routeLogout(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid session token"})
 		return
 	}
+
 	session.Delete(sessionKeyUserId)
 	if err := session.Save(); err != nil {
 		slog.Debug("Unable to save session")
@@ -60,7 +68,9 @@ func (ui *WebUi) routeAuth(c *gin.Context) {
 
 	uuid := ui.authUserFn(username, password)
 	if uuid == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
+		c.Set(loginAttemptKey, true)
+		ui.routeLogin(c)
+
 		return
 	}
 
