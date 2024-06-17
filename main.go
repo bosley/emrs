@@ -17,14 +17,14 @@ const (
 )
 
 type AppConfig struct {
-	WebUi  webui.Config
-	Reaper reaper.Config
+	WebUi webui.Config
 }
 
 type App struct {
 	wg     *sync.WaitGroup
 	engine *nerv.Engine
 	config *AppConfig
+	kill   reaper.Trigger
 }
 
 func main() {
@@ -40,7 +40,6 @@ func main() {
 
 	webUiAddr := flag.String("addr", webui.DefaultWebUiAddr, "Address to bind Web UI to [address:port]")
 	releaseMode := flag.Bool("release", false, "Turn on debug mode")
-	gracefulSecs := flag.Int("grace", defaultAppGracefulShutdownSecs, "Graceful shutdown time (seconds)")
 
 	// TODO: NOTE:
 	// Until we get vaults running and databases working we will use simple auth setup so we can
@@ -66,23 +65,33 @@ func main() {
 		},
 	}
 
-	reaperCfg := reaper.Config{
-		WaitGroup:    new(sync.WaitGroup),
-		ShutdownSecs: *gracefulSecs,
-	}
-
 	appCfg := AppConfig{
-		WebUi:  uiCfg,
-		Reaper: reaperCfg,
+		WebUi: uiCfg,
 	}
 
 	if *releaseMode {
 		configureReleaseMode(&appCfg)
 	}
 
+	wg := new(sync.WaitGroup)
+
+	trigger, err := reaper.Spawn(&reaper.Config{
+		Name:   "reaper",
+		Engine: appEngine,
+		Grace:  5,
+		Wg:     wg,
+	})
+
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(-1)
+	}
+
 	app := &App{
 		engine: appEngine,
 		config: &appCfg,
+		wg:     wg,
+		kill:   trigger,
 	}
 
 	app.Exec()
@@ -112,7 +121,7 @@ func (app *App) Exec() {
 
 	must(app.engine.Start())
 
-	app.config.Reaper.WaitGroup.Wait()
+	app.wg.Wait()
 
 	must(app.engine.Stop())
 }
