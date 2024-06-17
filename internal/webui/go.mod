@@ -3,7 +3,7 @@ module webui
 go 1.22.3
 
 require (
-	github.com/bosley/nerv-go v0.2.0
+	github.com/bosley/nerv-go v0.2.1
 	github.com/gin-contrib/sessions v1.0.1
 	github.com/gin-gonic/gin v1.10.0
 )

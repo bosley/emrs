@@ -7,7 +7,7 @@ replace internal/reaper => ./internal/reaper
 replace internal/webui => ./internal/webui
 
 require (
-	github.com/bosley/nerv-go v0.2.0
+	github.com/bosley/nerv-go v0.2.1
 	internal/reaper v0.0.0-00010101000000-000000000000
 	internal/webui v0.0.0-00010101000000-000000000000
 )
