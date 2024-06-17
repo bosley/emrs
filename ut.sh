@@ -2,7 +2,6 @@
 
 modules=(
   internal/badger
-  internal/reaper
 )
 
 go clean -cache
