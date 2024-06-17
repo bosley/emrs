@@ -8,12 +8,14 @@ import (
 	"log/slog"
 	"os"
 	"sync"
+  "path/filepath"
 )
 
 const (
 	defaultAppGracefulShutdownSecs = 5
 	defaultAppUser                 = "admin"
 	defaultAppPassword             = "admin"
+  defaultEmrsInstanceDirName     = ".emrs"
 )
 
 type AppConfig struct {
@@ -31,12 +33,18 @@ func main() {
 
 	tempLoggedInUserId := "UUID-DEV" // TODO: Remove this. This is for dev auth sys, before DB setup
 
+  emrsInstance := filepath.Join(mustGet(os.UserHomeDir()).(string), defaultEmrsInstanceDirName)
+
+
 	slog.SetDefault(
 		slog.New(
 			slog.NewTextHandler(os.Stdout,
 				&slog.HandlerOptions{
 					Level: slog.LevelDebug,
 				})))
+
+	setupTarget := flag.String("emrs", emrsInstance, "Create an EMRS instance. takes <DIR>")
+  createTarget := flag.Bool("new", false, "Create target defined by -emrs")
 
 	webUiAddr := flag.String("addr", webui.DefaultWebUiAddr, "Address to bind Web UI to [address:port]")
 	releaseMode := flag.Bool("release", false, "Turn on debug mode")
@@ -48,6 +56,11 @@ func main() {
 	username := flag.String("user", defaultAppUser, "Username to log in with")
 	password := flag.String("pass", defaultAppPassword, "Password to require for login")
 	flag.Parse()
+
+  if *createTarget {
+    RunSetupUI(*setupTarget)
+    os.Exit(0)
+  }
 
 	appEngine := nerv.NewEngine()
 
@@ -93,6 +106,14 @@ func must(e error) {
 		slog.Error(e.Error())
 		os.Exit(-1)
 	}
+}
+
+func mustGet(t any, e error) any {
+  if e != nil {
+    slog.Error(e.Error())
+    os.Exit(-1)
+  }
+  return t
 }
 
 func configureReleaseMode(cfg *AppConfig) {
