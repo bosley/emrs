@@ -1,7 +1,7 @@
 #!/bin/bash
 
 modules=(
-  internal/badger
+  badger
 )
 
 go clean -cache

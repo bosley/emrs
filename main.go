@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/bosley/nerv-go"
-	"internal/reaper"
+	"reaper"
 	"internal/webui"
 	"log/slog"
 	"os"
