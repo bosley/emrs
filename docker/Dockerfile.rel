@@ -22,7 +22,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /emrs
 
 FROM build-stage AS run-test-stage
 
-RUN ./unit-tests.sh
+RUN ./dev.sh --test
 
 ##
 ## Deploy the application binary into a lean image

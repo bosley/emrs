@@ -7,7 +7,7 @@ WORKDIR /
 COPY . ./
 RUN go mod download
 
-RUN ./unit-tests.sh
+RUN ./dev.sh --test
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /emrs
 
