@@ -1,0 +1,42 @@
+# syntax=docker/dockerfile:1
+
+##
+## Build the application from source
+##
+
+FROM golang:1.22 AS build-stage
+
+WORKDIR /
+
+COPY . ./
+
+RUN go mod download
+
+COPY . ./
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o /emrs
+
+##
+## Run the tests in the container
+##
+
+FROM build-stage AS run-test-stage
+
+RUN ./unit-tests.sh
+
+##
+## Deploy the application binary into a lean image
+##
+
+FROM gcr.io/distroless/base-debian11 AS build-release-stage
+
+WORKDIR /
+
+COPY --from=build-stage /emrs /emrs
+COPY --from=build-stage /static /static/
+
+EXPOSE 8080
+
+USER nonroot:nonroot
+
+ENTRYPOINT ["/emrs", "-addr", "0.0.0.0:8080", "-release"]

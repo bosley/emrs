@@ -27,7 +27,7 @@ const (
 )
 
 const (
-	webAssetDir = "internal/webui/static"
+	webAssetDir = "static"
 )
 
 var ErrAlreadyStarted = errors.New("webui already started")
