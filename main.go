@@ -14,17 +14,14 @@ const (
 	defaultAppGracefulShutdownSecs = 5
 	defaultAppUser                 = "admin"
 	defaultAppPassword             = "admin"
+	defaultAppReaperName           = "grim.reaper"
 )
-
-type AppConfig struct {
-	WebUi webui.Config
-}
 
 type App struct {
 	wg     *sync.WaitGroup
 	engine *nerv.Engine
-	config *AppConfig
 	kill   reaper.Trigger
+	ui     *webui.WebUi
 }
 
 func main() {
@@ -48,35 +45,23 @@ func main() {
 	password := flag.String("pass", defaultAppPassword, "Password to require for login")
 	flag.Parse()
 
-	appEngine := nerv.NewEngine()
-
-	uiCfg := webui.Config{
-		Engine:  appEngine,
-		Address: *webUiAddr,
-		Mode:    webui.DefaultWebUiMode,
-		AuthenticateUser: func(user string, pass string) *string {
-
-			// TODO: Actually check a vault for this pass, and
-			//       return the user's UUID if good
-			if user == *username && pass == *password {
-				return &tempLoggedInUserId
-			}
-			return nil
-		},
-	}
-
-	appCfg := AppConfig{
-		WebUi: uiCfg,
-	}
-
+	uiMode := webui.ModeDebug
 	if *releaseMode {
-		configureReleaseMode(&appCfg)
+		uiMode = webui.ModeRelease
+		slog.SetDefault(
+			slog.New(
+				slog.NewTextHandler(os.Stdout,
+					&slog.HandlerOptions{
+						Level: slog.LevelWarn,
+					})))
 	}
+
+	appEngine := nerv.NewEngine()
 
 	wg := new(sync.WaitGroup)
 
 	trigger, err := reaper.Spawn(&reaper.Config{
-		Name:   "reaper",
+		Name:   defaultAppReaperName,
 		Engine: appEngine,
 		Grace:  5,
 		Wg:     wg,
@@ -87,11 +72,27 @@ func main() {
 		os.Exit(-1)
 	}
 
+	ui := webui.New(webui.Config{
+		Engine:      appEngine,
+		Address:     *webUiAddr,
+		Mode:        uiMode,
+		KillChannel: defaultAppReaperName,
+		AuthenticateUser: func(user string, pass string) *string {
+
+			// TODO: Actually check a vault for this pass, and
+			//       return the user's UUID if good
+			if user == *username && pass == *password {
+				return &tempLoggedInUserId
+			}
+			return nil
+		},
+	})
+
 	app := &App{
 		engine: appEngine,
-		config: &appCfg,
 		wg:     wg,
 		kill:   trigger,
+		ui:     ui,
 	}
 
 	app.Exec()
@@ -104,24 +105,13 @@ func must(e error) {
 	}
 }
 
-func configureReleaseMode(cfg *AppConfig) {
-	slog.SetDefault(
-		slog.New(
-			slog.NewTextHandler(os.Stdout,
-				&slog.HandlerOptions{
-					Level: slog.LevelWarn,
-				})))
-
-	cfg.WebUi.Mode = webui.ModeRelease
-}
-
 func (app *App) Exec() {
 
-	PopulateModules(app.engine, app.config)
-
 	must(app.engine.Start())
+	must(app.ui.Start())
 
 	app.wg.Wait()
 
+	must(app.ui.Stop())
 	must(app.engine.Stop())
 }

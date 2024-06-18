@@ -1,8 +1,8 @@
 package webui
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -53,26 +53,7 @@ func (ui *WebUi) RequestProfiler() gin.HandlerFunc {
 		//  and track metadata about the slowest requests
 		//  This isn't the time to do it, but this here
 		//  is the place to do it
-		ui.record(fmt.Sprintf("latency: %s", latency.String()))
+		//ui.record(fmt.Sprintf("latency: %s", latency.String()))
+		slog.Info("req complete", "latency", latency)
 	}
-}
-
-func (ui *WebUi) record(data string) {
-	// Formatting time too often can be a real drag, and since
-	// we don't care about time-delay to record as long as stamp
-	// is accurate, we `go` off to do the formatting before dumping
-	// the contents of the data through the bus to be logged by
-	// the webui command processor
-	t := time.Now()
-	go func() {
-		stamp := fmt.Sprintf("%d-%02d-%02dT%02d:%02d:%02d",
-			t.Year(), t.Month(), t.Day(),
-			t.Hour(), t.Minute(), t.Second())
-		ui.pane.SubmitTo(ui.topic, &MsgCommand{
-			Type: MsgTypeInfo,
-			Msg: &MsgInfo{
-				Info: fmt.Sprintf("%s| %s", stamp, data),
-			},
-		})
-	}()
 }

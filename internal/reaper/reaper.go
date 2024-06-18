@@ -32,7 +32,6 @@ func Spawn(cfg *Config) (Trigger, error) {
 	producer, err := cfg.Engine.AddRoute(cfg.Name, func(c *nerv.Context) {
 
 		if watch.Load() {
-			slog.Warn("kill requested over nerv (again)", "from", c.Event.Producer)
 			return
 		}
 
@@ -47,6 +46,11 @@ func Spawn(cfg *Config) (Trigger, error) {
 	}
 
 	performShutdownBroadcast := func() {
+
+		watch.Store(true)
+
+		producer(nil)
+
 		t := cfg.Grace
 		for t != 0 {
 			slog.Warn("shutdown alert", "t", t)
