@@ -2,6 +2,7 @@
 
 modules=(
   badger
+  reaper
 )
 
 go clean -cache
