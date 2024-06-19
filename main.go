@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/bosley/emrs/badger"
 	"github.com/bosley/nerv-go"
 	"internal/webui"
 	"log/slog"
@@ -72,6 +73,12 @@ func main() {
 		os.Exit(-1)
 	}
 
+	storedPasswordHash, err := badger.Hash([]byte(sc.WebUi.Pass))
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(-1)
+	}
+
 	ui := webui.New(webui.Config{
 		Engine:      appEngine,
 		Address:     webAddress,
@@ -81,12 +88,17 @@ func main() {
 		ServerKey:   sc.WebUi.Key,
 		AuthenticateUser: func(user string, pass string) *string {
 
-			// TODO: Actually check a vault for this pass, and
-			//       return the user's UUID if good
-			if user == sc.WebUi.User && pass == sc.WebUi.Pass {
-				return &tempLoggedInUserId
+			if user != sc.WebUi.User {
+				slog.Warn("incorrect username")
+				return nil
 			}
-			return nil
+
+			if err := badger.RawIsHashMatch([]byte(pass), append([]byte(nil), storedPasswordHash...)); err != nil {
+				slog.Error("auth failure", "error", err.Error())
+				return nil
+			}
+
+			return &tempLoggedInUserId
 		},
 	})
 
