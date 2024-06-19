@@ -27,6 +27,7 @@ WORKDIR /
 COPY --from=build-stage /emrs /emrs
 COPY --from=build-stage /static /static/
 COPY --from=build-stage /emrs.yaml /emrs.yaml
+COPY --from=build-stage /keys /keys
 
 EXPOSE 8080
 

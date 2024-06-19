@@ -1,9 +1,9 @@
 webui:
   host: "0.0.0.0"
   port: "8080"
-  certFile: ""
-  keyFile: ""
-  caCertPath: ""
+  certFile: "keys/server.csr"
+  keyFile: "keys/server.key"
+  caCertPath: "keys/rootCA.pem"
   localUser: "admin"
   localPass: "admin"
 

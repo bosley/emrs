@@ -46,6 +46,12 @@ type WebMetrics struct {
 	// TODO:  avgLatency (see middleware.go)
 }
 
+type HttpsConfig struct {
+  ServerCert string
+  ServerKey string
+  ServerCaCert string
+}
+
 type WebUi struct {
 	ginEng     *gin.Engine
 	nrvEng     *nerv.Engine
