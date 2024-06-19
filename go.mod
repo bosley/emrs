@@ -2,14 +2,14 @@ module github.com/bosley/emrs
 
 go 1.22.3
 
-replace internal/reaper => ./internal/reaper
+replace reaper => ./reaper
 
 replace internal/webui => ./internal/webui
 
 require (
-	github.com/bosley/nerv-go v0.2.0
-	internal/reaper v0.0.0-00010101000000-000000000000
+	github.com/bosley/nerv-go v0.2.1
 	internal/webui v0.0.0-00010101000000-000000000000
+	reaper v0.0.0-00010101000000-000000000000
 )
 
 require (

@@ -24,20 +24,20 @@ const (
 	DefaultWebUiAddr = "127.0.0.1:8080"
 	ModeRelease      = gin.ReleaseMode
 	ModeDebug        = gin.DebugMode
-	DefaultWebUiMode = ModeDebug
 )
 
 const (
-	webAssetDir = "internal/webui/static"
+	webAssetDir = "static"
 )
 
 var ErrAlreadyStarted = errors.New("webui already started")
+var ErrNotYetStarted = errors.New("webui not yet started")
 
 type Config struct {
 	Engine           *nerv.Engine
 	Address          string
 	Mode             string
-	DesignatedTopic  string
+	KillChannel      string
 	AuthenticateUser func(username string, password string) *string
 }
 
@@ -53,7 +53,6 @@ type WebUi struct {
 	srv        *http.Server
 	running    bool
 	address    string
-	pane       *nerv.ModulePane
 	killOtw    atomic.Bool
 	topic      string
 	authUserFn func(username string, password string) *string
@@ -63,20 +62,41 @@ type WebUi struct {
 
 func New(config Config) *WebUi {
 
+	webuiConsumerName := "webui.consumer"
+
 	gin.SetMode(config.Mode)
 
 	route := gin.New()
 
 	ui := &WebUi{
 		nrvEng:     config.Engine,
-		wg:         new(sync.WaitGroup),
-		running:    false,
 		address:    config.Address,
-		topic:      config.DesignatedTopic,
 		authUserFn: config.AuthenticateUser,
+		running:    false,
+		wg:         new(sync.WaitGroup),
 	}
 
 	ui.killOtw.Store(false)
+
+	// Create a nerv consumer to listen for early
+	// kill signal for the reaper middleware
+	ui.nrvEng.Register(nerv.Consumer{
+		Id: webuiConsumerName,
+		Fn: func(event *nerv.Event) {
+			slog.Debug("webui received shutdown warning", "from", event.Producer)
+			ui.killOtw.Store(true)
+		},
+	})
+
+	if err := ui.nrvEng.SubscribeTo(config.KillChannel, webuiConsumerName); err != nil {
+		panic(err.Error())
+	}
+
+	// TODO: We need to figure out what we want to do about storing suer
+	//       info. Right now this is just "cookie cutter" from an example,
+	//       and is in no way ready for anything.
+	//       It also doesn't work on chrome. It works on chrome incognito,
+	//       and safari, but not chrome proper.
 
 	store := cookie.NewStore([]byte("some-badger-secret-here"))
 
@@ -130,13 +150,6 @@ func (ui *WebUi) Start() error {
 
 	slog.Info("webui:Start")
 
-	if err := ui.pane.SubscribeTo(ui.topic, []nerv.Consumer{
-		nerv.Consumer{
-			Id: ui.GetName(),
-			Fn: ui.NervEvent,
-		}}, true); err != nil {
-		return err
-	}
 	if ui.running {
 		return ErrAlreadyStarted
 	}
@@ -162,12 +175,12 @@ func (ui *WebUi) Start() error {
 	return nil
 }
 
-func (ui *WebUi) Shutdown() {
+func (ui *WebUi) Stop() error {
 
-	slog.Info("webui:Shutdown")
+	slog.Info("webui:Stop")
 
-	if ui.wg == nil {
-		return
+	if !ui.running {
+		return ErrNotYetStarted
 	}
 
 	shutdownCtx, shutdownRelease := context.WithTimeout(
@@ -176,34 +189,9 @@ func (ui *WebUi) Shutdown() {
 	defer shutdownRelease()
 
 	if err := ui.srv.Shutdown(shutdownCtx); err != nil {
-		slog.Error(err.Error())
-		panic("Failed to shutdown webui")
+		return err
 	}
 
 	ui.wg.Wait()
-	ui.wg = nil
-}
-
-func (ui *WebUi) RecvModulePane(pane *nerv.ModulePane) {
-	ui.pane = pane
-}
-
-func (ui *WebUi) NervEvent(event *nerv.Event) {
-
-	slog.Debug("webui:NervEvent")
-
-	cmd, ok := event.Data.(*MsgCommand)
-	if !ok {
-		slog.Warn("webui failed to convert event to command")
-		return
-	}
-
-	switch cmd.Type {
-	case MsgTypeInfo:
-		ui.procCmdInfo(cmd.Msg.(*MsgInfo))
-		break
-	default:
-		slog.Warn("invalid command type for webui", "value", cmd.Type)
-		break
-	}
+	return nil
 }

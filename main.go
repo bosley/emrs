@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 	"github.com/bosley/nerv-go"
-	"internal/reaper"
 	"internal/webui"
 	"log/slog"
 	"os"
+	"reaper"
 	"sync"
 )
 
@@ -14,17 +14,14 @@ const (
 	defaultAppGracefulShutdownSecs = 5
 	defaultAppUser                 = "admin"
 	defaultAppPassword             = "admin"
+	defaultAppReaperName           = "grim.reaper"
 )
-
-type AppConfig struct {
-	WebUi  webui.Config
-	Reaper reaper.Config
-}
 
 type App struct {
 	wg     *sync.WaitGroup
 	engine *nerv.Engine
-	config *AppConfig
+	kill   reaper.Trigger
+	ui     *webui.WebUi
 }
 
 func main() {
@@ -40,7 +37,6 @@ func main() {
 
 	webUiAddr := flag.String("addr", webui.DefaultWebUiAddr, "Address to bind Web UI to [address:port]")
 	releaseMode := flag.Bool("release", false, "Turn on debug mode")
-	gracefulSecs := flag.Int("grace", defaultAppGracefulShutdownSecs, "Graceful shutdown time (seconds)")
 
 	// TODO: NOTE:
 	// Until we get vaults running and databases working we will use simple auth setup so we can
@@ -49,12 +45,38 @@ func main() {
 	password := flag.String("pass", defaultAppPassword, "Password to require for login")
 	flag.Parse()
 
+	uiMode := webui.ModeDebug
+	if *releaseMode {
+		uiMode = webui.ModeRelease
+		slog.SetDefault(
+			slog.New(
+				slog.NewTextHandler(os.Stdout,
+					&slog.HandlerOptions{
+						Level: slog.LevelWarn,
+					})))
+	}
+
 	appEngine := nerv.NewEngine()
 
-	uiCfg := webui.Config{
-		Engine:  appEngine,
-		Address: *webUiAddr,
-		Mode:    webui.DefaultWebUiMode,
+	wg := new(sync.WaitGroup)
+
+	trigger, err := reaper.Spawn(&reaper.Config{
+		Name:   defaultAppReaperName,
+		Engine: appEngine,
+		Grace:  5,
+		Wg:     wg,
+	})
+
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(-1)
+	}
+
+	ui := webui.New(webui.Config{
+		Engine:      appEngine,
+		Address:     *webUiAddr,
+		Mode:        uiMode,
+		KillChannel: defaultAppReaperName,
 		AuthenticateUser: func(user string, pass string) *string {
 
 			// TODO: Actually check a vault for this pass, and
@@ -64,25 +86,13 @@ func main() {
 			}
 			return nil
 		},
-	}
-
-	reaperCfg := reaper.Config{
-		WaitGroup:    new(sync.WaitGroup),
-		ShutdownSecs: *gracefulSecs,
-	}
-
-	appCfg := AppConfig{
-		WebUi:  uiCfg,
-		Reaper: reaperCfg,
-	}
-
-	if *releaseMode {
-		configureReleaseMode(&appCfg)
-	}
+	})
 
 	app := &App{
 		engine: appEngine,
-		config: &appCfg,
+		wg:     wg,
+		kill:   trigger,
+		ui:     ui,
 	}
 
 	app.Exec()
@@ -95,24 +105,13 @@ func must(e error) {
 	}
 }
 
-func configureReleaseMode(cfg *AppConfig) {
-	slog.SetDefault(
-		slog.New(
-			slog.NewTextHandler(os.Stdout,
-				&slog.HandlerOptions{
-					Level: slog.LevelWarn,
-				})))
-
-	cfg.WebUi.Mode = webui.ModeRelease
-}
-
 func (app *App) Exec() {
 
-	PopulateModules(app.engine, app.config)
-
 	must(app.engine.Start())
+	must(app.ui.Start())
 
-	app.config.Reaper.WaitGroup.Wait()
+	app.wg.Wait()
 
+	must(app.ui.Stop())
 	must(app.engine.Stop())
 }

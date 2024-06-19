@@ -51,8 +51,12 @@ func (ui *WebUi) routeLogout(c *gin.Context) {
 		return
 	}
 
-	// Show the login page
-	ui.routeLogin(c)
+	c.HTML(200, "message.html", gin.H{
+		"NavData":    buildNavData(c),
+		"PageHeader": buildPageHeader("Logged Out"),
+		"Message":    "You have been logged out",
+		"ShowLogin":  true,
+	})
 }
 
 func (ui *WebUi) routeAuth(c *gin.Context) {
