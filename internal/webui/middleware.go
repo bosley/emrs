@@ -10,9 +10,11 @@ import (
 func (ui *WebUi) EmrsAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if getLoggedInUser(c) == nil {
-			c.HTML(http.StatusUnauthorized, "denied.html", gin.H{
+			c.HTML(http.StatusUnauthorized, "message.html", gin.H{
 				"NavData":    buildNavData(c),
 				"PageHeader": buildPageHeader("Access denied"),
+				"Message":    "You don't have permission.",
+				"ShowLogin":  true,
 			})
 			c.Abort()
 			return

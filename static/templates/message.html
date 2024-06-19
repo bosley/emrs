@@ -8,12 +8,16 @@
       <hgroup>
         <strong>
           <center>
-          Access Denied
+            {{ .Message }}
           </center>
         </strong>
       </hgroup>
+      
       <p>
+      {{if .ShowLogin }}
       <button class="contrast" OnClick="location.href='/login'">Log In</button>
+      {{end}}
+      <p>
     </div>
     <div>
     </div>
@@ -21,4 +25,3 @@
 </main>
 
 {{ template "footer" . }}
-

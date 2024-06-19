@@ -92,6 +92,12 @@ func New(config Config) *WebUi {
 		panic(err.Error())
 	}
 
+	// TODO: We need to figure out what we want to do about storing suer
+	//       info. Right now this is just "cookie cutter" from an example,
+	//       and is in no way ready for anything.
+	//       It also doesn't work on chrome. It works on chrome incognito,
+	//       and safari, but not chrome proper.
+
 	store := cookie.NewStore([]byte("some-badger-secret-here"))
 
 	route.Use(sessions.Sessions("emrs", store))
