@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/bosley/nerv-go"
 	"internal/webui"
 	"log/slog"
@@ -11,10 +12,8 @@ import (
 )
 
 const (
-	defaultAppGracefulShutdownSecs = 5
-	defaultAppUser                 = "admin"
-	defaultAppPassword             = "admin"
-	defaultAppReaperName           = "grim.reaper"
+	defaultAppUser     = "admin"
+	defaultAppPassword = "admin"
 )
 
 type App struct {
@@ -35,7 +34,6 @@ func main() {
 					Level: slog.LevelDebug,
 				})))
 
-	webUiAddr := flag.String("addr", webui.DefaultWebUiAddr, "Address to bind Web UI to [address:port]")
 	releaseMode := flag.Bool("release", false, "Turn on debug mode")
 
 	// TODO: NOTE:
@@ -43,6 +41,9 @@ func main() {
 	// get development underway but still have auth framed-in
 	username := flag.String("user", defaultAppUser, "Username to log in with")
 	password := flag.String("pass", defaultAppPassword, "Password to require for login")
+
+	configPath := flag.String("config", "emrs.yaml", "Server config YAML")
+
 	flag.Parse()
 
 	uiMode := webui.ModeDebug
@@ -56,14 +57,24 @@ func main() {
 					})))
 	}
 
+	sc, err := ReadServerConfig(*configPath)
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(-1)
+	}
+
+	webAddress := fmt.Sprintf("%s:%s", sc.WebUi.Host, sc.WebUi.Port)
+
+	slog.Info("using", "host", sc.WebUi.Host, "port", sc.WebUi.Port, "full", webAddress)
+
 	appEngine := nerv.NewEngine()
 
 	wg := new(sync.WaitGroup)
 
 	trigger, err := reaper.Spawn(&reaper.Config{
-		Name:   defaultAppReaperName,
+		Name:   sc.Reaper.Name,
 		Engine: appEngine,
-		Grace:  5,
+		Grace:  sc.Reaper.Grace,
 		Wg:     wg,
 	})
 
@@ -74,9 +85,9 @@ func main() {
 
 	ui := webui.New(webui.Config{
 		Engine:      appEngine,
-		Address:     *webUiAddr,
+		Address:     webAddress,
 		Mode:        uiMode,
-		KillChannel: defaultAppReaperName,
+		KillChannel: sc.Reaper.Name,
 		AuthenticateUser: func(user string, pass string) *string {
 
 			// TODO: Actually check a vault for this pass, and

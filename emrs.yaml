@@ -1,0 +1,11 @@
+webui:
+  host: "0.0.0.0"
+  port: "8080"
+  certFile: ""
+  keyFile: ""
+  caCertPath: ""
+
+reaper:
+  name: "reaper"
+  grace: 2
+

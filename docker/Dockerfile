@@ -19,4 +19,4 @@ EXPOSE 8080
 
 # Run
 
-ENTRYPOINT ["/emrs", "-addr", "0.0.0.0:8080"]
+ENTRYPOINT ["/emrs", "-config", "emrs.yaml"]
