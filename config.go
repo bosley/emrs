@@ -11,6 +11,8 @@ type WebServerCfg struct {
 	CertPath   string `yaml:certFile`
 	KeyPath    string `yaml:keyFile`
 	CACertPath string `yaml:caCertPath`
+  LocalUser  string `yaml:localUser`
+  LocalPass  string `yaml:localPass`
 }
 
 type ReaperServerCfg struct {

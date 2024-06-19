@@ -4,6 +4,8 @@ webui:
   certFile: ""
   keyFile: ""
   caCertPath: ""
+  localUser: "admin"
+  localPass: "admin"
 
 reaper:
   name: "reaper"

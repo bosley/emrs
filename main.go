@@ -11,10 +11,6 @@ import (
 	"sync"
 )
 
-const (
-	defaultAppUser     = "admin"
-	defaultAppPassword = "admin"
-)
 
 type App struct {
 	wg     *sync.WaitGroup
@@ -35,12 +31,6 @@ func main() {
 				})))
 
 	releaseMode := flag.Bool("release", false, "Turn on debug mode")
-
-	// TODO: NOTE:
-	// Until we get vaults running and databases working we will use simple auth setup so we can
-	// get development underway but still have auth framed-in
-	username := flag.String("user", defaultAppUser, "Username to log in with")
-	password := flag.String("pass", defaultAppPassword, "Password to require for login")
 
 	configPath := flag.String("config", "emrs.yaml", "Server config YAML")
 
@@ -92,7 +82,7 @@ func main() {
 
 			// TODO: Actually check a vault for this pass, and
 			//       return the user's UUID if good
-			if user == *username && pass == *password {
+			if user == sc.WebUi.LocalUser && pass == sc.WebUi.LocalPass {
 				return &tempLoggedInUserId
 			}
 			return nil
