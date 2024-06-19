@@ -3,6 +3,7 @@ module webui
 go 1.22.3
 
 require (
+	github.com/bosley/emrs/badger v0.0.0-00010101000000-000000000000
 	github.com/bosley/nerv-go v0.2.1
 	github.com/gin-contrib/sessions v1.0.1
 	github.com/gin-gonic/gin v1.10.0
@@ -39,3 +40,5 @@ require (
 	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/bosley/emrs/badger => ../../badger

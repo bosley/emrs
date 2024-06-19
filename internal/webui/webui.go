@@ -8,6 +8,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"github.com/bosley/emrs/badger"
 	"github.com/bosley/nerv-go"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -60,6 +61,7 @@ type WebUi struct {
 	topic      string
 	tlsConfig  *tls.Config
 	authUserFn func(username string, password string) *string
+	badge      badger.Badge
 
 	metrics WebMetrics
 }
@@ -87,6 +89,13 @@ func New(config Config) *WebUi {
 		tlsConfig: &tls.Config{
 			Certificates: []tls.Certificate{serverTLSCert},
 		},
+		badge: nil,
+	}
+
+	if err := setupBadger(ui); err != nil {
+		// Can only happen if rand.Read fails
+		slog.Error(err.Error())
+		panic("failed to generate badge")
 	}
 
 	ui.killOtw.Store(false)
@@ -105,13 +114,9 @@ func New(config Config) *WebUi {
 		panic(err.Error())
 	}
 
-	// TODO: We need to figure out what we want to do about storing suer
-	//       info. Right now this is just "cookie cutter" from an example,
-	//       and is in no way ready for anything.
-	//       It also doesn't work on chrome. It works on chrome incognito,
-	//       and safari, but not chrome proper.
-
-	store := cookie.NewStore([]byte("some-badger-secret-here"))
+	// badge id is random, so when the server reboots all
+	// previous session information will be made moot
+	store := cookie.NewStore([]byte(ui.badge.Id()))
 
 	route.Use(sessions.Sessions("emrs", store))
 
@@ -157,6 +162,21 @@ func (ui *WebUi) initRoutes() {
 
 func (ui *WebUi) GetName() string {
 	return "mod.webui"
+}
+
+func setupBadger(ui *WebUi) error {
+
+	var err error
+	ui.badge, err = badger.New(badger.Config{
+		Nickname: "webUi",
+	})
+
+	if err != nil {
+		return err
+	}
+
+	slog.Debug("badge created", "Id", ui.badge.Id(), "PubKey", ui.badge.PublicKey())
+	return nil
 }
 
 func (ui *WebUi) Start() error {

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	sessionKeyUserId = "user-id"
+	sessionKeyUserId = "user-id" // We may want to change this?
 	loginAttemptKey  = "login-failure"
 )
 
