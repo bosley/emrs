@@ -7,7 +7,9 @@ replace reaper => ./reaper
 replace internal/webui => ./internal/webui
 
 require (
+	github.com/bosley/emrs/badger v0.0.0-00010101000000-000000000000
 	github.com/bosley/nerv-go v0.2.1
+	gopkg.in/yaml.v3 v3.0.1
 	internal/webui v0.0.0-00010101000000-000000000000
 	reaper v0.0.0-00010101000000-000000000000
 )
@@ -38,10 +40,11 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.8.0 // indirect
-	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/bosley/emrs/badger => ./badger

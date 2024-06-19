@@ -6,7 +6,9 @@ package webui
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
+	"github.com/bosley/emrs/badger"
 	"github.com/bosley/nerv-go"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -21,9 +23,8 @@ import (
 )
 
 const (
-	DefaultWebUiAddr = "127.0.0.1:8080"
-	ModeRelease      = gin.ReleaseMode
-	ModeDebug        = gin.DebugMode
+	ModeRelease = gin.ReleaseMode
+	ModeDebug   = gin.DebugMode
 )
 
 const (
@@ -39,6 +40,9 @@ type Config struct {
 	Mode             string
 	KillChannel      string
 	AuthenticateUser func(username string, password string) *string
+
+	ServerCert string
+	ServerKey  string
 }
 
 type WebMetrics struct {
@@ -55,7 +59,9 @@ type WebUi struct {
 	address    string
 	killOtw    atomic.Bool
 	topic      string
+	tlsConfig  *tls.Config
 	authUserFn func(username string, password string) *string
+	badge      badger.Badge
 
 	metrics WebMetrics
 }
@@ -66,6 +72,12 @@ func New(config Config) *WebUi {
 
 	gin.SetMode(config.Mode)
 
+	serverTLSCert, err := tls.LoadX509KeyPair(config.ServerCert, config.ServerKey)
+	if err != nil {
+		slog.Error(err.Error(), "cert", config.ServerCert, "key", config.ServerKey)
+		panic("failed to load cert/key")
+	}
+
 	route := gin.New()
 
 	ui := &WebUi{
@@ -74,6 +86,16 @@ func New(config Config) *WebUi {
 		authUserFn: config.AuthenticateUser,
 		running:    false,
 		wg:         new(sync.WaitGroup),
+		tlsConfig: &tls.Config{
+			Certificates: []tls.Certificate{serverTLSCert},
+		},
+		badge: nil,
+	}
+
+	if err := setupBadger(ui); err != nil {
+		// Can only happen if rand.Read fails
+		slog.Error(err.Error())
+		panic("failed to generate badge")
 	}
 
 	ui.killOtw.Store(false)
@@ -92,13 +114,9 @@ func New(config Config) *WebUi {
 		panic(err.Error())
 	}
 
-	// TODO: We need to figure out what we want to do about storing suer
-	//       info. Right now this is just "cookie cutter" from an example,
-	//       and is in no way ready for anything.
-	//       It also doesn't work on chrome. It works on chrome incognito,
-	//       and safari, but not chrome proper.
-
-	store := cookie.NewStore([]byte("some-badger-secret-here"))
+	// badge id is random, so when the server reboots all
+	// previous session information will be made moot
+	store := cookie.NewStore([]byte(ui.badge.Id()))
 
 	route.Use(sessions.Sessions("emrs", store))
 
@@ -146,6 +164,21 @@ func (ui *WebUi) GetName() string {
 	return "mod.webui"
 }
 
+func setupBadger(ui *WebUi) error {
+
+	var err error
+	ui.badge, err = badger.New(badger.Config{
+		Nickname: "webUi",
+	})
+
+	if err != nil {
+		return err
+	}
+
+	slog.Debug("badge created", "Id", ui.badge.Id(), "PubKey", ui.badge.PublicKey())
+	return nil
+}
+
 func (ui *WebUi) Start() error {
 
 	slog.Info("webui:Start")
@@ -155,8 +188,9 @@ func (ui *WebUi) Start() error {
 	}
 
 	ui.srv = &http.Server{
-		Addr:    ui.address,
-		Handler: ui.ginEng,
+		Addr:      ui.address,
+		Handler:   ui.ginEng,
+		TLSConfig: ui.tlsConfig,
 	}
 
 	ui.wg.Add(1)
@@ -165,7 +199,7 @@ func (ui *WebUi) Start() error {
 			ui.wg.Done()
 			ui.running = false
 		}()
-		err := ui.srv.ListenAndServe()
+		err := ui.srv.ListenAndServeTLS("", "")
 		if err != nil && err != http.ErrServerClosed {
 			slog.Error(err.Error())
 			os.Exit(-1)

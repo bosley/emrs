@@ -1,0 +1,12 @@
+webui:
+  host: "0.0.0.0"
+  port: "8080"
+  cert: "keys/server.crt"
+  key: "keys/server.key"
+  user: "admin"
+  pass: "admin"
+
+reaper:
+  name: "reaper"
+  grace: 2
+

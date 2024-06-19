@@ -11,6 +11,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"math/big"
 )
 
@@ -19,9 +20,9 @@ type Config struct {
 }
 
 type PubHashSig struct {
-  PubKey []byte
-  Hash   []byte
-  Sig    []byte
+	PubKey []byte
+	Hash   []byte
+	Sig    []byte
 }
 
 type Badge interface {
@@ -59,12 +60,28 @@ func New(cfg Config) (Badge, error) {
 	}, nil
 }
 
+func zeroArr(raw []byte) {
+	for i := 0; i < len(raw); i++ {
+		raw[i] = 0
+	}
+}
+
+func RawIsHashMatch(raw []byte, hashed []byte) error {
+	defer zeroArr(raw)
+	return bcrypt.CompareHashAndPassword(hashed, raw)
+}
+
+func Hash(raw []byte) ([]byte, error) {
+	defer zeroArr(raw)
+	return bcrypt.GenerateFromPassword(raw, bcrypt.DefaultCost)
+}
+
 func ToFormattedString(badge Badge) string {
-  return fmt.Sprintf(
-    "\n\tNICK: %s\n\t UID: %s\n\t KEY: %s\n",
-    badge.Nickname(),
-    badge.Id(),
-    badge.PublicKey())
+	return fmt.Sprintf(
+		"\n\tNICK: %s\n\t UID: %s\n\t KEY: %s\n",
+		badge.Nickname(),
+		badge.Id(),
+		badge.PublicKey())
 }
 
 func getCurve() elliptic.Curve {
@@ -174,7 +191,7 @@ func (id *identity) EncodeIdentity() EncodedIdentity {
 		PublicKey:  id.PublicKey(),
 		PrivateKey: id.PrivateKey(),
 	}
-  return eid
+	return eid
 }
 
 func (id *identity) EncodeIdentityString() string {
@@ -191,7 +208,7 @@ func (id *identity) EncodeIdentityString() string {
 }
 
 func DecodeIdentity(eid EncodedIdentity) (Badge, error) {
-  block, _ := pem.Decode([]byte(eid.PrivateKey))
+	block, _ := pem.Decode([]byte(eid.PrivateKey))
 	if block == nil {
 		return nil, errors.New("no key extracted from identity")
 	}
@@ -206,7 +223,7 @@ func DecodeIdentity(eid EncodedIdentity) (Badge, error) {
 		uid:      eid.Id,
 		key:      privateKey,
 	}
-  return &id, nil
+	return &id, nil
 }
 
 func DecodeIdentityString(encodedId string) (Badge, error) {

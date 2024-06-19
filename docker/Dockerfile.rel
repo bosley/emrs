@@ -26,9 +26,11 @@ WORKDIR /
 
 COPY --from=build-stage /emrs /emrs
 COPY --from=build-stage /static /static/
+COPY --from=build-stage /emrs.yaml /emrs.yaml
+COPY --from=build-stage /keys /keys
 
 EXPOSE 8080
 
-USER nonroot:nonroot
+USER root
 
-ENTRYPOINT ["/emrs", "-addr", "0.0.0.0:8080", "-release"]
+ENTRYPOINT ["/emrs", "-config", "emrs.yaml", "-release"]
