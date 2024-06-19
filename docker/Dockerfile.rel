@@ -31,6 +31,6 @@ COPY --from=build-stage /keys /keys
 
 EXPOSE 8080
 
-USER nonroot:nonroot
+USER root
 
 ENTRYPOINT ["/emrs", "-config", "emrs.yaml", "-release"]
