@@ -4,6 +4,41 @@ import (
 	"testing"
 )
 
+func TestPasswordHashingPass(t *testing.T) {
+
+	password := "anteater"
+
+	hash, e := Hash([]byte(password))
+	if e != nil {
+		t.Fatalf("failed to hash password: %v", e)
+	}
+
+	compPass := []byte(password)
+	if err := RawIsHashMatch(compPass, hash); err != nil {
+		t.Fatalf("failed to check hash %v", err)
+	}
+
+	for i, _ := range compPass {
+		if compPass[i] != 0 {
+			t.Fatalf("failed to clear password after match")
+		}
+	}
+}
+
+func TestPasswordHashingZeroCheck(t *testing.T) {
+
+	password := []byte("anteater")
+
+	hash, e := Hash(password)
+	if e != nil {
+		t.Fatalf("failed to hash password: %v", e)
+	}
+
+	if err := RawIsHashMatch(password, hash); err == nil {
+		t.Fatal("failed to zero-out password - expected failiure")
+	}
+}
+
 func TestBadger(t *testing.T) {
 
 	for i := 0; i < 4; i++ {
