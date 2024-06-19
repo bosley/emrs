@@ -1,11 +1,10 @@
 webui:
   host: "0.0.0.0"
   port: "8080"
-  certFile: "keys/server.csr"
-  keyFile: "keys/server.key"
-  caCertPath: "keys/rootCA.pem"
-  localUser: "admin"
-  localPass: "admin"
+  cert: "keys/server.crt"
+  key: "keys/server.key"
+  user: "admin"
+  pass: "admin"
 
 reaper:
   name: "reaper"

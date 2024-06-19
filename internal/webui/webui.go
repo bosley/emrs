@@ -6,6 +6,7 @@ package webui
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"github.com/bosley/nerv-go"
 	"github.com/gin-contrib/sessions"
@@ -21,9 +22,8 @@ import (
 )
 
 const (
-	DefaultWebUiAddr = "127.0.0.1:8080"
-	ModeRelease      = gin.ReleaseMode
-	ModeDebug        = gin.DebugMode
+	ModeRelease = gin.ReleaseMode
+	ModeDebug   = gin.DebugMode
 )
 
 const (
@@ -39,17 +39,14 @@ type Config struct {
 	Mode             string
 	KillChannel      string
 	AuthenticateUser func(username string, password string) *string
+
+	ServerCert string
+	ServerKey  string
 }
 
 type WebMetrics struct {
 	requests atomic.Uint64
 	// TODO:  avgLatency (see middleware.go)
-}
-
-type HttpsConfig struct {
-  ServerCert string
-  ServerKey string
-  ServerCaCert string
 }
 
 type WebUi struct {
@@ -61,6 +58,7 @@ type WebUi struct {
 	address    string
 	killOtw    atomic.Bool
 	topic      string
+	tlsConfig  *tls.Config
 	authUserFn func(username string, password string) *string
 
 	metrics WebMetrics
@@ -72,6 +70,12 @@ func New(config Config) *WebUi {
 
 	gin.SetMode(config.Mode)
 
+	serverTLSCert, err := tls.LoadX509KeyPair(config.ServerCert, config.ServerKey)
+	if err != nil {
+		slog.Error(err.Error(), "cert", config.ServerCert, "key", config.ServerKey)
+		panic("failed to load cert/key")
+	}
+
 	route := gin.New()
 
 	ui := &WebUi{
@@ -80,6 +84,9 @@ func New(config Config) *WebUi {
 		authUserFn: config.AuthenticateUser,
 		running:    false,
 		wg:         new(sync.WaitGroup),
+		tlsConfig: &tls.Config{
+			Certificates: []tls.Certificate{serverTLSCert},
+		},
 	}
 
 	ui.killOtw.Store(false)
@@ -161,8 +168,9 @@ func (ui *WebUi) Start() error {
 	}
 
 	ui.srv = &http.Server{
-		Addr:    ui.address,
-		Handler: ui.ginEng,
+		Addr:      ui.address,
+		Handler:   ui.ginEng,
+		TLSConfig: ui.tlsConfig,
 	}
 
 	ui.wg.Add(1)
@@ -171,7 +179,7 @@ func (ui *WebUi) Start() error {
 			ui.wg.Done()
 			ui.running = false
 		}()
-		err := ui.srv.ListenAndServe()
+		err := ui.srv.ListenAndServeTLS("", "")
 		if err != nil && err != http.ErrServerClosed {
 			slog.Error(err.Error())
 			os.Exit(-1)

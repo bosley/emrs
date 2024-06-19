@@ -6,13 +6,12 @@ import (
 )
 
 type WebServerCfg struct {
-	Host       string `yaml:host`
-	Port       string `yaml:port`
-	CertPath   string `yaml:certFile`
-	KeyPath    string `yaml:keyFile`
-	CACertPath string `yaml:caCertPath`
-  LocalUser  string `yaml:localUser`
-  LocalPass  string `yaml:localPass`
+	Host string `yaml:host`
+	Port string `yaml:port`
+	Cert string `yaml:cert`
+	Key  string `yaml:key`
+	User string `yaml:user`
+	Pass string `yaml:pass`
 }
 
 type ReaperServerCfg struct {
@@ -36,6 +35,5 @@ func ReadServerConfig(path string) (*ServerCfg, error) {
 	if err := yaml.Unmarshal(f, &sc); err != nil {
 		return nil, err
 	}
-
 	return &sc, nil
 }

@@ -11,7 +11,6 @@ import (
 	"sync"
 )
 
-
 type App struct {
 	wg     *sync.WaitGroup
 	engine *nerv.Engine
@@ -78,11 +77,13 @@ func main() {
 		Address:     webAddress,
 		Mode:        uiMode,
 		KillChannel: sc.Reaper.Name,
+		ServerCert:  sc.WebUi.Cert,
+		ServerKey:   sc.WebUi.Key,
 		AuthenticateUser: func(user string, pass string) *string {
 
 			// TODO: Actually check a vault for this pass, and
 			//       return the user's UUID if good
-			if user == sc.WebUi.LocalUser && pass == sc.WebUi.LocalPass {
+			if user == sc.WebUi.User && pass == sc.WebUi.Pass {
 				return &tempLoggedInUserId
 			}
 			return nil
