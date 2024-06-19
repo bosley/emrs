@@ -34,6 +34,20 @@ function doUsage() {
   echo -e "\n"
 }
 
+function doMySQLExports() {
+  export MYSQL_ROOT_PASSWORD="admin8675309"
+  export MYSQL_DATABASE="EMRS"
+  export MYSQL_USER="dev"
+  export MYSQL_PASSWORD="password8675309"
+  
+  export MYSQL_ALLOW_EMPTY_PASSWORD=0
+  export MYSQL_RANDOM_ROOT_PASSWORD=0
+}
+
+function doEMRSExports() {
+  export EMRS_DOCKER_TARGET=$DOCKER_TARGET
+}
+
 function doDockerBuild() {
   echo "build:" "$APP_NAME:$MODE" " using " $DOCKER_TARGET
   docker build --tag "$APP_NAME:$MODE" -f "$DOCKER_TARGET" .
@@ -42,6 +56,12 @@ function doDockerBuild() {
 function doLaunch() {
   echo "run:" "$APP_NAME:$MODE"
   docker run --publish 8080:8080 "$APP_NAME:$MODE"
+}
+
+function doDockerCompose() {
+  doEMRSExports
+  doMySQLExports
+  docker compose up
 }
 
 function confirmChoice() {
@@ -103,6 +123,10 @@ for i in "$@"; do
       ;;
     build)
       doDockerBuild
+      exit 0
+      ;;
+    compose)
+      doDockerCompose
       exit 0
       ;;
     rel)

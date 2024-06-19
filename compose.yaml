@@ -1,7 +1,24 @@
 services:
+  mysql:
+    image: mysql:latest  #${MYSQL_VERSION}
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    ports:
+      - ${MYSQL_PORT:-3306}:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
   emrs:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: ${EMRS_DOCKER_TARGET} 
+    depends_on:
+      - mysql
     ports:
       - "8080:8080"
+
+
+volumes:
+  mysql_data:

@@ -1,8 +1,8 @@
 package badger
 
 import (
+	"fmt"
 	"testing"
-  "fmt"
 )
 
 func TestPasswordHashingPass(t *testing.T) {
@@ -14,14 +14,12 @@ func TestPasswordHashingPass(t *testing.T) {
 		t.Fatalf("failed to hash password: %v", e)
 	}
 
-
 	badge, _ := New(Config{"admin"})
 
 	encodedId := badge.EncodeIdentityString()
 
-
-  fmt.Println(string(hash))
-  fmt.Println(encodedId)
+	fmt.Println(string(hash))
+	fmt.Println(encodedId)
 
 	compPass := []byte(password)
 	if err := RawIsHashMatch(compPass, hash); err != nil {
