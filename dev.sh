@@ -3,11 +3,17 @@
 set -e    # Die if any command fails
 
 MODE="dev"
+
 APP_NAME=emrs
+
 DOCKER_FILE_DEV=docker/Dockerfile
 DOCKER_FILE_REL=docker/Dockerfile.rel
 DOCKER_TARGET=$DOCKER_FILE_DEV
-UNIT_TEST_LOCATION=./scripts/unit-tests.sh
+
+TEST_MODULE_LIST=(
+  badger
+  reaper
+)
 
 function doUsage() {
   echo -e "\nDeveloper script\n"  
@@ -35,15 +41,48 @@ function doLaunch() {
   docker run --publish 8080:8080 "$APP_NAME:$MODE"
 }
 
+function confirmChoice() {
+  read -p "Press [y|Y] to confirm: " -n 1 -r
+  echo    # (optional) move to a new line
+  if [[ $REPLY =~ ^[Yy]$ ]]
+  then
+      echo -e "\n\tconfirmed\n"
+      return
+  fi
+  echo "Exiting. User decided not to continue."
+  exit 2
+}
+
+function doRemoveAllImages() {
+  docker rmi -f $(docker images -aq)
+}
+
+function doRemoveAllImagesAndVolumes() {
+  docker rm -vf $(docker ps -aq)
+}
+
+function doTests() {
+  echo "[ RUNNING TESTS ]"
+
+  go clean -cache
+  
+  for module in ${TEST_MODULE_LIST[*]}; do
+    cd ${module}
+    go clean -cache
+    go test . -v
+    cd -
+  done
+}
+
 for i in "$@"; do
   case $i in
     run)
       doLaunch
-      shift
+      exit 0
       ;;
     build)
       doDockerBuild
-      shift
+      exit 0
       ;;
     rel)
       MODE="rel"
@@ -55,9 +94,21 @@ for i in "$@"; do
       DOCKER_TARGET=$DOCKER_FILE_DEV
       shift
       ;;
+    clean)
+      echo -e "\n\tWARNING:\n\n\tThis will remove ALL docker images\n\n"
+      confirmChoice
+      doRemoveAllImages
+      exit 0
+      ;;
+    purge)
+      echo -e "\n\tWARNING:\n\n\tThis will remove ALL docker IMAGES & VOLUMES\n\n"
+      confirmChoice
+      doRemoveAllImagesAndVolumes
+      exit 0
+      ;;
     -t|--test)
-      bash $UNIT_TEST_LOCATION 
-      shift
+      doTests
+      exit 0
       ;;
     -h|--help)
       doUsage
