@@ -28,6 +28,7 @@ COPY --from=build-stage /emrs_config.yaml /emrs_config.yaml
 COPY --from=build-stage /web-static /
 COPY --from=build-stage /emrs /emrs
 COPY --from=build-stage /keys /keys
+COPY --from=build-stage /web-static /web-static
 
 #COPY --from=build-stage /static /static/
 
