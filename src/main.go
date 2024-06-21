@@ -7,6 +7,10 @@ import (
 	"crypto/tls"
 )
 
+const (
+  configName = "emrs_config.yaml"
+)
+
 func main() {
 
   slog.SetDefault(
@@ -16,7 +20,7 @@ func main() {
 					Level: slog.LevelDebug,
 				})))
 
-  cfg, err := LoadConfig("emrs.yaml")
+  cfg, err := LoadConfig(configName)
 
   if err != nil {
     slog.Error(err.Error())

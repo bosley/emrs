@@ -5,7 +5,8 @@ FROM golang:1.22
 WORKDIR /
 
 COPY ./src /
-ADD ./dev/keys /keys
+COPY ./dev/keys /keys
+COPY ./assets /
 
 RUN go mod download
 

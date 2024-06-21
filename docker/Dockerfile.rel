@@ -9,7 +9,8 @@ FROM golang:1.22 AS build-stage
 WORKDIR /
 
 COPY ./src /
-ADD ./dev/keys /keys
+COPY ./dev/keys /keys
+COPY ./assets /
 
 RUN go mod download
 
@@ -23,7 +24,8 @@ FROM gcr.io/distroless/base-debian11 AS build-release-stage
 
 WORKDIR /
 
-COPY --from=build-stage /emrs.yaml /emrs.yaml
+COPY --from=build-stage /emrs_config.yaml /emrs_config.yaml
+COPY --from=build-stage /web-static /
 COPY --from=build-stage /emrs /emrs
 COPY --from=build-stage /keys /keys
 

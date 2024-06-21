@@ -1,0 +1,27 @@
+{{ template "header" . }}
+
+
+<main class="container">
+  <article class="grid">
+    <div></div>
+    <div>
+      <hgroup>
+        <strong>
+          <center>
+            {{ .Message }}
+          </center>
+        </strong>
+      </hgroup>
+      
+      <p>
+      {{if .ShowLogin }}
+      <button class="contrast" OnClick="location.href='/login'">Log In</button>
+      {{end}}
+      <p>
+    </div>
+    <div>
+    </div>
+  </article>
+</main>
+
+{{ template "footer" . }}
