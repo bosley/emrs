@@ -25,8 +25,6 @@ func (wc *controller) routeLogin(c *gin.Context) {
 
 	_, ok := c.Get(loginAttemptKey)
 
-	slog.Debug("Looks like there was a previous login attempt")
-
 	c.HTML(200, "login.html", gin.H{
 		"PageHeader":  buildPageHeader("Login"),
 		"NavData":     buildNavData(c),
