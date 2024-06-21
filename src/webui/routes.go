@@ -1,12 +1,12 @@
 package webui
 
 import (
-	"log/slog"
-	"net/http"
+	//"log/slog"
+	//"net/http"
 
-	"github.com/gin-contrib/sessions"
+	//"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"strings"
+	//	"strings"
 )
 
 const (
@@ -14,14 +14,15 @@ const (
 	loginAttemptKey  = "login-failure"
 )
 
-func (ui *WebUi) routeIndex(c *gin.Context) {
+func (wc *controller) routeIndex(c *gin.Context) {
 	c.HTML(200, "index.html", gin.H{
 		"NavData":    buildNavData(c),
 		"PageHeader": buildPageHeader("Home"),
 	})
 }
 
-func (ui *WebUi) routeLogin(c *gin.Context) {
+/*
+func (wc *controller) routeLogin(c *gin.Context) {
 
 	_, ok := c.Get(loginAttemptKey)
 
@@ -34,7 +35,7 @@ func (ui *WebUi) routeLogin(c *gin.Context) {
 	})
 }
 
-func (ui *WebUi) routeLogout(c *gin.Context) {
+func (wc *controller) routeLogout(c *gin.Context) {
 
 	session := sessions.Default(c)
 	token := session.Get(sessionKeyUserId)
@@ -59,7 +60,7 @@ func (ui *WebUi) routeLogout(c *gin.Context) {
 	})
 }
 
-func (ui *WebUi) routeAuth(c *gin.Context) {
+func (wc *controller) routeAuth(c *gin.Context) {
 
 	session := sessions.Default(c)
 	username := c.PostForm("username")
@@ -70,10 +71,10 @@ func (ui *WebUi) routeAuth(c *gin.Context) {
 		return
 	}
 
-	uuid := ui.authUserFn(username, password)
+	uuid := wc.authUserFn(username, password)
 	if uuid == nil {
 		c.Set(loginAttemptKey, true)
-		ui.routeLogin(c)
+		wc.routeLogin(c)
 
 		return
 	}
@@ -90,23 +91,25 @@ func (ui *WebUi) routeAuth(c *gin.Context) {
 	c.Redirect(http.StatusMovedPermanently, "/emrs/dashboard")
 }
 
-func (ui *WebUi) routeStatus(c *gin.Context) {
+func (wc *controller) routeStatus(c *gin.Context) {
 	c.HTML(200, "status.html", gin.H{
 		"NavData":    buildNavData(c),
 		"PageHeader": buildPageHeader("Status"),
 	})
 }
 
-func (ui *WebUi) routeDashboard(c *gin.Context) {
+func (wc *controller) routeDashboard(c *gin.Context) {
 	c.HTML(200, "dashboard.html", gin.H{
 		"NavData":    buildNavData(c),
 		"PageHeader": buildPageHeader("Home"),
 	})
 }
 
-func (ui *WebUi) routeSettings(c *gin.Context) {
+func (wc *controller) routeSettings(c *gin.Context) {
 	c.HTML(200, "settings.html", gin.H{
 		"NavData":    buildNavData(c),
 		"PageHeader": buildPageHeader("Settings"),
 	})
 }
+
+*/

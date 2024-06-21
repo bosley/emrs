@@ -1,12 +1,18 @@
-module webui
+module github.com/bosley/emrs
 
 go 1.22.3
 
+replace emrs/core => ./core
+
+replace emrs/webui => ./webui
+
+replace emrs/badger => ./badger
+
+require emrs/core v0.0.0-00010101000000-000000000000
+
 require (
-	github.com/bosley/emrs/badger v0.0.0-00010101000000-000000000000
-	github.com/bosley/nerv-go v0.2.1
-	github.com/gin-contrib/sessions v1.0.1
-	github.com/gin-gonic/gin v1.10.0
+	emrs/badger v0.0.0-00010101000000-000000000000
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -15,7 +21,9 @@ require (
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
+	github.com/gin-contrib/sessions v1.0.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
+	github.com/gin-gonic/gin v1.10.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.20.0 // indirect
@@ -33,12 +41,13 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.8.0 // indirect
-	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/bosley/emrs/badger => ../../badger
+require (
+	emrs/webui v0.0.0-00010101000000-000000000000
+	golang.org/x/crypto v0.24.0 // indirect
+)

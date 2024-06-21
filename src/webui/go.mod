@@ -1,17 +1,16 @@
-module github.com/bosley/emrs
+module emrs/webui
 
 go 1.22.3
 
-replace reaper => ./reaper
+replace emrs/core => ../core
 
-replace internal/webui => ./internal/webui
+replace emrs/badger => ../badger
 
 require (
-	github.com/bosley/emrs/badger v0.0.0-00010101000000-000000000000
-	github.com/bosley/nerv-go v0.2.1
-	gopkg.in/yaml.v3 v3.0.1
-	internal/webui v0.0.0-00010101000000-000000000000
-	reaper v0.0.0-00010101000000-000000000000
+	emrs/badger v0.0.0-00010101000000-000000000000
+	emrs/core v0.0.0-00010101000000-000000000000
+	github.com/gin-contrib/sessions v1.0.1
+	github.com/gin-gonic/gin v1.10.0
 )
 
 require (
@@ -20,9 +19,7 @@ require (
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
-	github.com/gin-contrib/sessions v1.0.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/gin-gonic/gin v1.10.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.20.0 // indirect
@@ -45,6 +42,5 @@ require (
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/bosley/emrs/badger => ./badger

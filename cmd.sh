@@ -11,12 +11,11 @@ DOCKER_FILE_REL=docker/Dockerfile.rel
 DOCKER_TARGET=$DOCKER_FILE_DEV
 
 TEST_MODULE_LIST=(
-  badger
-  reaper
+  pkg/badger
 )
 
 function doUsage() {
-  echo -e "\nDeveloper script\n"  
+  echo -e "\nCommand script\n"  
   echo " -h | --help                Help"
   echo " -t | --test                Execute unit tests"
   echo "dev | rel                   Set dev, vs release mode (default:dev)"
