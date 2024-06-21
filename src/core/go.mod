@@ -1,3 +1,3 @@
-module github.com/bosley/emrs/internal/core
+module emrs/core
 
 go 1.22.3

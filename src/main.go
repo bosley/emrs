@@ -4,6 +4,7 @@ import (
   "os"
   "log/slog"
 	"emrs/core"
+	"emrs/webui"
 	"crypto/tls"
 )
 
@@ -59,8 +60,9 @@ func main() {
 }
 
 func setupServiceWebUi(appCore* core.Core, address string, cert tls.Certificate) {
-
-  slog.Debug("setup web ui", "address", address)
-
-
+  err := appCore.AddService("webui", webui.New(appCore, address, cert))
+  if err != nil {
+    slog.Error("Failed to add webui service to application core", "error", err.Error())
+    panic("failed to create webui")
+  }
 }
