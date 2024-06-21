@@ -1,12 +1,12 @@
 package webui
 
 import (
-	//"log/slog"
-	//"net/http"
+	"log/slog"
+	"net/http"
 
-	//"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	//	"strings"
+	"strings"
 )
 
 const (
@@ -21,7 +21,6 @@ func (wc *controller) routeIndex(c *gin.Context) {
 	})
 }
 
-/*
 func (wc *controller) routeLogin(c *gin.Context) {
 
 	_, ok := c.Get(loginAttemptKey)
@@ -71,11 +70,10 @@ func (wc *controller) routeAuth(c *gin.Context) {
 		return
 	}
 
-	uuid := wc.authUserFn(username, password)
+	uuid := wc.appCore.ValidateUserAndGetId(username, password)
 	if uuid == nil {
 		c.Set(loginAttemptKey, true)
 		wc.routeLogin(c)
-
 		return
 	}
 
@@ -111,5 +109,3 @@ func (wc *controller) routeSettings(c *gin.Context) {
 		"PageHeader": buildPageHeader("Settings"),
 	})
 }
-
-*/

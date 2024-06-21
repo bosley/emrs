@@ -74,19 +74,17 @@ func (c *controller) Start() error {
 	gins.Static("/js", strings.Join([]string{webAssetDir, "js"}, "/emrs/"))
 
 	gins.GET("/", c.routeIndex)
-	/*
-		gins.GET("/login", c.routeLogin)
-		gins.GET("/logout", c.routeLogout)
-		gins.POST("/auth", c.routeAuth)
+	gins.GET("/login", c.routeLogin)
+	gins.GET("/logout", c.routeLogout)
+	gins.POST("/auth", c.routeAuth)
 
-		priv := gins.Group("/emrs")
-		priv.Use(c.EmrsAuth())
-		{
-			priv.GET("/status", c.routeStatus)
-			priv.GET("/dashboard", c.routeDashboard)
-			priv.GET("/settings", c.routeSettings)
-		}
-	*/
+	priv := gins.Group("/emrs")
+	priv.Use(c.EmrsAuth())
+	{
+		priv.GET("/status", c.routeStatus)
+		priv.GET("/dashboard", c.routeDashboard)
+		priv.GET("/settings", c.routeSettings)
+	}
 	c.srv = &http.Server{
 		Addr:    c.address,
 		Handler: gins,

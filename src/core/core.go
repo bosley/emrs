@@ -96,3 +96,14 @@ func (e *Core) broadcastShutdownAlert() {
 
 	slog.Debug("TODO: Tell the services that we are about to shutdown")
 }
+
+func (e *Core) ValidateUserAndGetId(username string, password string) *string {
+
+	id := "DEFAULT_TEST_USER"
+
+	// Until we get Database stuff in
+	if username == "admin" && password == "admin" {
+		return &id
+	}
+	return nil
+}
