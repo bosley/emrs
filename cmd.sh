@@ -16,7 +16,7 @@ TEST_MODULE_LIST=(
 )
 
 function doUsage() {
-  echo -e "\nDeveloper script\n"  
+  echo -e "\nCommand script\n"  
   echo " -h | --help                Help"
   echo " -t | --test                Execute unit tests"
   echo "dev | rel                   Set dev, vs release mode (default:dev)"

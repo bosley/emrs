@@ -4,10 +4,12 @@ FROM golang:1.22
 
 WORKDIR /
 
-COPY . ./
+COPY ./src /
+ADD ./dev/keys /keys
+
 RUN go mod download
 
-RUN bash dev.sh --test
+#RUN bash dev.sh --test
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /emrs
 
@@ -19,4 +21,4 @@ EXPOSE 8080
 
 # Run
 
-ENTRYPOINT ["/emrs", "-config", "emrs.yaml"]
+ENTRYPOINT ["/emrs"]
