@@ -11,8 +11,7 @@ DOCKER_FILE_REL=docker/Dockerfile.rel
 DOCKER_TARGET=$DOCKER_FILE_DEV
 
 TEST_MODULE_LIST=(
-  badger
-  reaper
+  pkg/badger
 )
 
 function doUsage() {

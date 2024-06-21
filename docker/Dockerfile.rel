@@ -35,4 +35,4 @@ EXPOSE 8080
 
 USER root
 
-ENTRYPOINT ["/emrs"]
+ENTRYPOINT ["/emrs", "--release"]

@@ -1,68 +1,87 @@
 package main
 
 import (
-  "os"
-  "log/slog"
+	"crypto/tls"
+	"emrs/badger"
 	"emrs/core"
 	"emrs/webui"
-	"crypto/tls"
+	"flag"
+	"log/slog"
+	"os"
 )
 
 const (
-  configName = "emrs_config.yaml"
+	configName = "emrs_config.yaml"
 )
 
 func main() {
 
-  slog.SetDefault(
+	slog.SetDefault(
 		slog.New(
 			slog.NewTextHandler(os.Stdout,
 				&slog.HandlerOptions{
 					Level: slog.LevelDebug,
 				})))
 
-  cfg, err := LoadConfig(configName)
+	releaseMode := flag.Bool("release", false, "Turn on debug mode")
 
-  if err != nil {
-    slog.Error(err.Error())
-  }
+	flag.Parse()
 
-  slog.Info("config",
-	  "Home", cfg.Home,
-	  "Hostname", cfg.Hostname,
-	  "Port", cfg.Port,
-	  "Key", cfg.Key,
-	  "Cert", cfg.Cert,
-	  "Datastore", cfg.Datastore)
+	badge, err := badger.New(badger.Config{
+		Nickname: "emrs",
+	})
 
-  cert, err := cfg.LoadTlsCert()
-  if err != nil {
-    slog.Error("Failed to load TLS cert", "error", err.Error())
-    os.Exit(1)
-  }
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
 
-  appCore := core.New()
+	slog.Info("badge initialized", "id", badge.Id())
 
-  setupServiceWebUi(
-    appCore,
-    cfg.GetAddress(),
-    cert)
+	cfg, err := LoadConfig(configName)
 
-  if err := appCore.Start(); err != nil {
-    panic(err.Error())
-  }
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
 
-  appCore.Await()
+	slog.Info("config",
+		"Home", cfg.Home,
+		"Hostname", cfg.Hostname,
+		"Port", cfg.Port,
+		"Key", cfg.Key,
+		"Cert", cfg.Cert,
+		"Datastore", cfg.Datastore)
 
-  if err := appCore.Stop(); err != nil {
-    panic(err.Error())
-  }
+	cert, err := cfg.LoadTlsCert()
+	if err != nil {
+		slog.Error("Failed to load TLS cert", "error", err.Error())
+		os.Exit(1)
+	}
+
+	appCore := core.New(*releaseMode)
+
+	setupServiceWebUi(
+		appCore,
+		cfg.GetAddress(),
+		badge.Id(),
+		cert)
+
+	if err := appCore.Start(); err != nil {
+		panic(err.Error())
+	}
+
+	appCore.Await()
+
+	if err := appCore.Stop(); err != nil {
+		panic(err.Error())
+	}
 }
 
-func setupServiceWebUi(appCore* core.Core, address string, cert tls.Certificate) {
-  err := appCore.AddService("webui", webui.New(appCore, address, cert))
-  if err != nil {
-    slog.Error("Failed to add webui service to application core", "error", err.Error())
-    panic("failed to create webui")
-  }
+func setupServiceWebUi(appCore *core.Core, address string, sessionId string, cert tls.Certificate) {
+	err := appCore.AddService("webui", webui.New(appCore, address, sessionId, cert))
+	if err != nil {
+		slog.Error("Failed to add webui service to application core", "error", err.Error())
+		panic("failed to create webui")
+	}
 }

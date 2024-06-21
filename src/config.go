@@ -9,11 +9,11 @@ import (
 )
 
 type Config struct {
-	Home string `yaml:home`
-	Hostname      string `yaml:hostname`
-	Port          int    `yaml:port`
-	Key  string `yaml:key`
-	Cert string `yaml:cert`
+	Home      string `yaml:home`
+	Hostname  string `yaml:hostname`
+	Port      int    `yaml:port`
+	Key       string `yaml:key`
+	Cert      string `yaml:cert`
 	Datastore string `yaml:datastore`
 }
 
