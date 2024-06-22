@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"emrs/core"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
@@ -66,7 +66,10 @@ func (c *controller) Start() error {
 
 	gins := gin.New()
 
-	store := cookie.NewStore([]byte(c.emrsId))
+	store, err := redis.NewStore(64, "tcp", "localhost:6379", "", []byte(c.emrsId))
+	if err != nil {
+		return err
+	}
 
 	gins.Use(sessions.Sessions("emrs", store))
 
@@ -107,9 +110,6 @@ func (c *controller) Start() error {
 	}()
 
 	slog.Info("webui started")
-
-	slog.Warn("TODO: START THE WEB SERVER")
-
 	return nil
 }
 

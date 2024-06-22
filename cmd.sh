@@ -65,7 +65,11 @@ function doRemoveAllImagesAndVolumes() {
 
 function doMakeKeys() {
 
-  cd ./keys
+  cd ./dev/keys
+  rm -rf ./*
+
+  cp ../server.csr.cnf ./
+
   openssl genrsa -des3 -out rootCA.key 2048
   openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 1024 -out rootCA.pem
 
