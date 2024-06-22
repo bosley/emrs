@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"emrs/badger"
 	"emrs/core"
+	"emrs/datastore"
 	"emrs/webui"
 	"flag"
 	"log/slog"
@@ -61,6 +62,22 @@ func main() {
 
 	appCore := core.New(*releaseMode)
 
+	// TODO: Set the dbPanel, and hand it off to core
+	//       core should make it public, or methods to get the
+	//       various panels of control. Perhaps
+	//       datastore should just be opened and readied by core in its Start()
+
+	p, err := datastore.New(cfg.Datastore)
+
+	if p.ServerDb != nil {
+		slog.Warn("wow")
+	}
+
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+
 	setupServiceWebUi(
 		appCore,
 		cfg.GetAddress(),
@@ -68,13 +85,15 @@ func main() {
 		cert)
 
 	if err := appCore.Start(); err != nil {
-		panic(err.Error())
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 
 	appCore.Await()
 
 	if err := appCore.Stop(); err != nil {
-		panic(err.Error())
+		slog.Error(err.Error())
+		os.Exit(1)
 	}
 }
 
