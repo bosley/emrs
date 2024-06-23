@@ -8,6 +8,13 @@ type InterfacePanel struct {
 	ServerDb ServerStore
 	UserDb   UserStore
 	AssetDb  AssetStore
+  Handler  ControlHandle
+  
+}
+
+type ControlHandle interface {
+  IsNew() bool
+  Close()
 }
 
 type ServerStore interface {
@@ -55,13 +62,14 @@ type Event struct {
 }
 
 func New(path string) (InterfacePanel, error) {
-
-	// If no exist, then we make and we init the data its simpl
-
-	var c controller
+  c, err := newController(path)
+  if err != nil {
+    return nil, err
+  }
 	return InterfacePanel{
-		ServerDb: &c,
-		UserDb:   &c,
-		AssetDb:  &c,
+		ServerDb: c,
+		UserDb:   c,
+		AssetDb:  c,
+    Handler:  c.
 	}, nil
 }
