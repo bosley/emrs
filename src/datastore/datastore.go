@@ -23,7 +23,7 @@ type ServerStore interface {
 type UserStore interface {
 	Validate(username string, password string) bool
 
-	AddUser(name string, password string, email string) error
+	AddUser(name string, password string) error
 
 	UpdatePassword(username string, password string) error
 

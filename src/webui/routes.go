@@ -12,19 +12,29 @@ import (
 const (
 	sessionKeyUserId = "user-id" // We may want to change this?
 	loginAttemptKey  = "login-failure"
+  existingUserKey  = "user-exists"
+  userCreatedKey   = "user-created"
 )
 
 func (wc *controller) routeIndex(c *gin.Context) {
-	c.HTML(200, "index.html", gin.H{
-		"NavData":    buildNavData(c),
-		"PageHeader": buildPageHeader("Home"),
-	})
+
+  if wc.appCore.RequiresSetup() {
+    wc.routeNewUser(c)
+  } else {
+	  c.HTML(200, "index.html", gin.H{
+		  "NavData":    buildNavData(c),
+		  "PageHeader": buildPageHeader("Home"),
+	  })
+  }
 }
 
 func (wc *controller) routeLogin(c *gin.Context) {
 
 	_, ok := c.Get(loginAttemptKey)
 
+  // TODO: We now need to check if userCreatedKey exists
+  //       if it does, pass that key to the file to welcome them.
+  //       the value in c.Get will be their username
 	c.HTML(200, "login.html", gin.H{
 		"PageHeader":  buildPageHeader("Login"),
 		"NavData":     buildNavData(c),
@@ -106,4 +116,37 @@ func (wc *controller) routeSettings(c *gin.Context) {
 		"NavData":    buildNavData(c),
 		"PageHeader": buildPageHeader("Settings"),
 	})
+}
+
+func (wc *controller) routeNewUser(c *gin.Context) {
+
+  // TODO: If existingUserKey is true then we need to show an 
+  //       error message stating the user wasn't created
+	  c.HTML(200, "new_user.html", gin.H{
+		  "NavData":    buildNavData(c),
+		  "PageHeader": buildPageHeader("Create User"),
+	  })
+}
+
+func (wc *controller) routeCreateUser(c *gin.Context) {
+
+	username := c.PostForm("username")
+	password := c.PostForm("password")
+
+	if strings.Trim(username, " ") == "" || strings.Trim(password, " ") == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameters can't be empty"})
+		return
+	}
+
+  slog.Warn("need to create user", "username", username, "password", password)
+
+  db := wc.appCore.GetUserStore()
+
+  if err := db.AddUser(username, password); err != nil {
+    c.Set(existingUserKey, true)
+    wc.routeNewUser(c)
+    return
+  }
+  c.Set(userCreatedKey, username)
+	c.Redirect(http.StatusMovedPermanently, "/login")
 }

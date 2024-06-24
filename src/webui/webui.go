@@ -77,6 +77,8 @@ func (c *controller) Start() error {
 	gins.GET("/login", c.routeLogin)
 	gins.GET("/logout", c.routeLogout)
 	gins.POST("/auth", c.routeAuth)
+	gins.POST("/new/user", c.routeNewUser)
+	gins.POST("/create/user", c.routeCreateUser)
 
 	priv := gins.Group("/emrs")
 	priv.Use(c.EmrsAuth())
