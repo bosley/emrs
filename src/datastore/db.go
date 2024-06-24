@@ -3,7 +3,8 @@ package datastore
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+  //	_ "github.com/mattn/go-sqlite3"
+  _ "modernc.org/sqlite"
 	"log/slog"
 	"sync/atomic"
 )
@@ -65,7 +66,7 @@ func newController(path string) (*controller, error) {
 	c.running.Store(false)
 
 	const options = "?_journal_mode=WAL"
-	db, err := sql.Open("sqlite3", fmt.Sprintf("%s%s", path, options))
+	db, err := sql.Open("sqlite", fmt.Sprintf("%s%s", path, options))
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +123,7 @@ func db_ensure_table_exists(db *sql.DB, table string, creation_stmt string) erro
 	}
 
 	if exists {
+    slog.Debug("table already exists", "name", table)
 		return nil
 	}
 

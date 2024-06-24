@@ -14,8 +14,7 @@ COPY ./assets /
 
 RUN go mod download
 
-RUN GOOS=linux go build -o /emrs
-#RUN CGO_ENABLED=0 GOOS=linux go build -o /emrs
+RUN CGO_ENABLED=0 GOOS=linux go build -o /emrs
 
 ##
 ## Deploy the application binary into a lean image
