@@ -3,9 +3,9 @@ package datastore
 import (
 	"database/sql"
 	"fmt"
-  //	_ "github.com/mattn/go-sqlite3"
-  _ "modernc.org/sqlite"
+	//	_ "github.com/mattn/go-sqlite3"
 	"log/slog"
+	_ "modernc.org/sqlite"
 	"sync/atomic"
 )
 
@@ -123,7 +123,7 @@ func db_ensure_table_exists(db *sql.DB, table string, creation_stmt string) erro
 	}
 
 	if exists {
-    slog.Debug("table already exists", "name", table)
+		slog.Debug("table already exists", "name", table)
 		return nil
 	}
 

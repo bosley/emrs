@@ -59,4 +59,3 @@ func (wc *controller) RequestProfiler() gin.HandlerFunc {
 		slog.Info("req complete", "latency", latency)
 	}
 }
-

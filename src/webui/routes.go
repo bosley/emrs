@@ -12,29 +12,28 @@ import (
 const (
 	sessionKeyUserId = "user-id" // We may want to change this?
 	loginAttemptKey  = "login-failure"
-  existingUserKey  = "user-exists"
-  userCreatedKey   = "user-created"
+	existingUserKey  = "user-exists"
+	userCreatedKey   = "user-created"
 )
 
 func (wc *controller) routeIndex(c *gin.Context) {
-
-  if wc.appCore.RequiresSetup() {
-    wc.routeNewUser(c)
-  } else {
-	  c.HTML(200, "index.html", gin.H{
-		  "NavData":    buildNavData(c),
-		  "PageHeader": buildPageHeader("Home"),
-	  })
-  }
+	if wc.appCore.RequiresSetup() {
+		wc.routeNewUser(c)
+	} else {
+		c.HTML(200, "index.html", gin.H{
+			"NavData":    buildNavData(c),
+			"PageHeader": buildPageHeader("Home"),
+		})
+	}
 }
 
 func (wc *controller) routeLogin(c *gin.Context) {
 
 	_, ok := c.Get(loginAttemptKey)
 
-  // TODO: We now need to check if userCreatedKey exists
-  //       if it does, pass that key to the file to welcome them.
-  //       the value in c.Get will be their username
+	// TODO: We now need to check if userCreatedKey exists
+	//       if it does, pass that key to the file to welcome them.
+	//       the value in c.Get will be their username
 	c.HTML(200, "login.html", gin.H{
 		"PageHeader":  buildPageHeader("Login"),
 		"NavData":     buildNavData(c),
@@ -78,14 +77,15 @@ func (wc *controller) routeAuth(c *gin.Context) {
 		return
 	}
 
-	uuid := wc.appCore.ValidateUserAndGetId(username, password)
-	if uuid == nil {
+	db := wc.appCore.GetUserStore()
+
+	if !db.Validate(username, password) {
 		c.Set(loginAttemptKey, true)
 		wc.routeLogin(c)
 		return
 	}
 
-	session.Set(sessionKeyUserId, *uuid)
+	session.Set(sessionKeyUserId, username)
 
 	if err := session.Save(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
@@ -120,15 +120,35 @@ func (wc *controller) routeSettings(c *gin.Context) {
 
 func (wc *controller) routeNewUser(c *gin.Context) {
 
-  // TODO: If existingUserKey is true then we need to show an 
-  //       error message stating the user wasn't created
-	  c.HTML(200, "new_user.html", gin.H{
-		  "NavData":    buildNavData(c),
-		  "PageHeader": buildPageHeader("Create User"),
-	  })
+	if !wc.appCore.RequiresSetup() {
+		c.HTML(http.StatusUnauthorized, "message.html", gin.H{
+			"NavData":    buildNavData(c),
+			"PageHeader": buildPageHeader("Not Available"),
+			"Message":    "Creating users is an unauthorized action after initial setup",
+			"ShowLogin":  false,
+		})
+		return
+	}
+
+	// TODO: If existingUserKey is true then we need to show an
+	//       error message stating the user wasn't created
+	c.HTML(200, "new_user.html", gin.H{
+		"NavData":    buildNavData(c),
+		"PageHeader": buildPageHeader("Create User"),
+	})
 }
 
 func (wc *controller) routeCreateUser(c *gin.Context) {
+
+	if !wc.appCore.RequiresSetup() {
+		c.HTML(http.StatusUnauthorized, "message.html", gin.H{
+			"NavData":    buildNavData(c),
+			"PageHeader": buildPageHeader("Not Available"),
+			"Message":    "Creating users is an unauthorized action after initial setup",
+			"ShowLogin":  false,
+		})
+		return
+	}
 
 	username := c.PostForm("username")
 	password := c.PostForm("password")
@@ -138,15 +158,19 @@ func (wc *controller) routeCreateUser(c *gin.Context) {
 		return
 	}
 
-  slog.Warn("need to create user", "username", username, "password", password)
+	slog.Warn("need to create user", "username", username, "password", password)
 
-  db := wc.appCore.GetUserStore()
+	db := wc.appCore.GetUserStore()
 
-  if err := db.AddUser(username, password); err != nil {
-    c.Set(existingUserKey, true)
-    wc.routeNewUser(c)
-    return
-  }
-  c.Set(userCreatedKey, username)
+	if err := db.AddUser(username, password); err != nil {
+		slog.Error("Error creating user", "err", err.Error())
+		c.Set(existingUserKey, true)
+		wc.routeNewUser(c)
+		return
+	}
+
+	wc.appCore.IndicateSetupComplete()
+
+	c.Set(userCreatedKey, username)
 	c.Redirect(http.StatusMovedPermanently, "/login")
 }

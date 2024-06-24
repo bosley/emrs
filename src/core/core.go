@@ -61,10 +61,10 @@ func (c *Core) Start() error {
 			c.broadcastShutdownAlert()
 		})
 
-  // TODO: Check datastore for server entry. if the entry does not exist,
-  // then
-  c.reqSetup.Store(true)
-  // otherwise, false
+	// TODO: Check datastore for server entry. if the entry does not exist,
+	// then
+	c.reqSetup.Store(true)
+	// otherwise, false
 
 	return nil
 }
@@ -106,29 +106,18 @@ func (c *Core) broadcastShutdownAlert() {
 	slog.Debug("TODO: Tell the services that we are about to shutdown")
 }
 
-func (c *Core) ValidateUserAndGetId(username string, password string) *string {
-
-	id := "DEFAULT_TEST_USER"
-
-	// Until we get Database stuff in
-	if username == "admin" && password == "admin" {
-		return &id
-	}
-	return nil
-}
-
 func (c *Core) GetUserStore() ds.UserStore {
-  return c.dbip.UserDb
+	return c.dbip.UserDb
 }
 
 func (c *Core) GetAssetStore() ds.AssetStore {
-  return c.dbip.AssetDb
+	return c.dbip.AssetDb
 }
 
 func (c *Core) RequiresSetup() bool {
-  return c.reqSetup.Load()
+	return c.reqSetup.Load()
 }
 
 func (c *Core) IndicateSetupComplete() {
-  c.reqSetup.Store(false)
+	c.reqSetup.Store(false)
 }
