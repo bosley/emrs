@@ -60,18 +60,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	appCore := core.New(*releaseMode)
+	dbip, err := datastore.New(cfg.Datastore)
 
-	// TODO: Set the dbPanel, and hand it off to core
-	//       core should make it public, or methods to get the
-	//       various panels of control. Perhaps
-	//       datastore should just be opened and readied by core in its Start()
-
-	p, err := datastore.New(cfg.Datastore)
-
-	if p.ServerDb != nil {
-		slog.Warn("wow")
-	}
+	appCore := core.New(*releaseMode, dbip)
 
 	if err != nil {
 		slog.Error(err.Error())

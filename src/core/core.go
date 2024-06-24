@@ -1,6 +1,7 @@
 package core
 
 import (
+	ds "emrs/datastore"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -20,6 +21,7 @@ type Core struct {
 	serviceMgr *serviceManager
 	wg         *sync.WaitGroup
 	relMode    bool
+	dbip       ds.InterfacePanel
 
 	kt trigger
 }
@@ -28,12 +30,13 @@ type stats struct {
 	start time.Time
 }
 
-func New(releaseMode bool) *Core {
+func New(releaseMode bool, dbip ds.InterfacePanel) *Core {
 	return &Core{
 		stats:      nil,
 		serviceMgr: newServiceManager(),
 		wg:         new(sync.WaitGroup),
 		relMode:    releaseMode,
+		dbip:       dbip,
 	}
 }
 

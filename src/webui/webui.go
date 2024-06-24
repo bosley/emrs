@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"emrs/core"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/redis"
+	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
@@ -66,10 +66,7 @@ func (c *controller) Start() error {
 
 	gins := gin.New()
 
-	store, err := redis.NewStore(64, "tcp", "localhost:6379", "", []byte(c.emrsId))
-	if err != nil {
-		return err
-	}
+	store := memstore.NewStore([]byte(c.emrsId))
 
 	gins.Use(sessions.Sessions("emrs", store))
 
