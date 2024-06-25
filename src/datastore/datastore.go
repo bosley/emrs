@@ -17,7 +17,8 @@ type ControlHandle interface {
 }
 
 type ServerStore interface {
-	UpdateIdentity(identity string) bool
+	LoadIdentity() *string
+	StoreIdentity(identity string) error
 }
 
 type UserStore interface {

@@ -29,9 +29,45 @@ func (c *controller) Close() {
 	}
 }
 
-func (c *controller) UpdateIdentity(identity string) bool {
+func (c *controller) StoreIdentity(identity string) error {
 
-	return false
+	tx, err := c.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Prepare(server_store_id)
+	if err != nil {
+		slog.Error("Error preparing to store identity", "err", err.Error())
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(identity)
+	err = tx.Commit()
+	if err != nil {
+		slog.Error("Error tx commit", "err", err.Error())
+		return err
+	}
+	return nil
+}
+
+func (c *controller) LoadIdentity() *string {
+	stmt, err := c.db.Prepare(server_get_id)
+
+	if err != nil {
+		slog.Error("Error retreiving server identity", "err", err.Error())
+		return nil
+	}
+	defer stmt.Close()
+
+	var id string
+	err = stmt.QueryRow().Scan(&id)
+	if err == nil {
+		return &id
+	}
+	slog.Error("Error retreiving server identity", "err", err.Error())
+	return nil
 }
 
 const db_table_create_identity = `create table identity (
@@ -57,6 +93,10 @@ const db_table_create_assets = `create table assets (
 )`
 
 const db_contains_table = `select name from sqlite_master where type = 'table' and name = ?`
+
+const server_get_id = `select data from identity where id = 0`
+
+const server_store_id = `insert or replace into identity (id, data) VALUES (0, ?)`
 
 func newController(path string) (*controller, error) {
 	slog.Debug("db_open")

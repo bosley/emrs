@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/tls"
-	"emrs/badger"
 	"emrs/core"
 	"emrs/datastore"
 	"emrs/webui"
@@ -27,17 +26,6 @@ func main() {
 	releaseMode := flag.Bool("release", false, "Turn on debug mode")
 
 	flag.Parse()
-
-	badge, err := badger.New(badger.Config{
-		Nickname: "emrs",
-	})
-
-	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
-	}
-
-	slog.Info("badge initialized", "id", badge.Id())
 
 	cfg, err := LoadConfig(configName)
 
@@ -72,7 +60,6 @@ func main() {
 	setupServiceWebUi(
 		appCore,
 		cfg.GetAddress(),
-		badge.Id(),
 		cert)
 
 	if err := appCore.Start(); err != nil {
@@ -88,8 +75,8 @@ func main() {
 	}
 }
 
-func setupServiceWebUi(appCore *core.Core, address string, sessionId string, cert tls.Certificate) {
-	err := appCore.AddService("webui", webui.New(appCore, address, sessionId, cert))
+func setupServiceWebUi(appCore *core.Core, address string, cert tls.Certificate) {
+	err := appCore.AddService("webui", webui.New(appCore, address, cert))
 	if err != nil {
 		slog.Error("Failed to add webui service to application core", "error", err.Error())
 		panic("failed to create webui")

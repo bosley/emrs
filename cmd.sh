@@ -22,7 +22,6 @@ function doUsage() {
   echo "build                       Build the specified mode's docker container"
   echo "run                         Run the specified mode's docker container"
   echo "clean                       Clean all docker images"
-  echo "purge                       Clean all docker images, and volumes"
   echo "keys                        Generate keys for HTTPS in the ./keys directory"
   echo -e "\n"
   echo "example:    ./dev.sh rel build run        Build and run the release mode"
@@ -57,10 +56,6 @@ function confirmChoice() {
 
 function doRemoveAllImages() {
   docker rmi -f $(docker images -aq)
-}
-
-function doRemoveAllImagesAndVolumes() {
-  docker rm -vf $(docker ps -aq)
 }
 
 function doMakeKeys() {
@@ -120,12 +115,6 @@ for i in "$@"; do
       echo -e "\n\tWARNING:\n\n\tThis will remove ALL docker images\n\n"
       confirmChoice
       doRemoveAllImages
-      exit 0
-      ;;
-    purge)
-      echo -e "\n\tWARNING:\n\n\tThis will remove ALL docker IMAGES & VOLUMES\n\n"
-      confirmChoice
-      doRemoveAllImagesAndVolumes
       exit 0
       ;;
     -t|--test)

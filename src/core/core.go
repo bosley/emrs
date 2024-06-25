@@ -1,6 +1,7 @@
 package core
 
 import (
+	"emrs/badger"
 	ds "emrs/datastore"
 	"log/slog"
 	"sync"
@@ -16,6 +17,7 @@ type Service interface {
 }
 
 type Core struct {
+	badge      badger.Badge
 	running    atomic.Bool
 	stats      *stats
 	serviceMgr *serviceManager
@@ -32,13 +34,15 @@ type stats struct {
 }
 
 func New(releaseMode bool, dbip ds.InterfacePanel) *Core {
-	return &Core{
+	c := &Core{
 		stats:      nil,
 		serviceMgr: newServiceManager(),
 		wg:         new(sync.WaitGroup),
 		relMode:    releaseMode,
 		dbip:       dbip,
 	}
+	c.setup()
+	return c
 }
 
 func (c *Core) Start() error {
@@ -60,11 +64,6 @@ func (c *Core) Start() error {
 			slog.Warn("Kill timer activated..")
 			c.broadcastShutdownAlert()
 		})
-
-	// TODO: Check datastore for server entry. if the entry does not exist,
-	// then
-	c.reqSetup.Store(true)
-	// otherwise, false
 
 	return nil
 }
@@ -120,4 +119,8 @@ func (c *Core) RequiresSetup() bool {
 
 func (c *Core) IndicateSetupComplete() {
 	c.reqSetup.Store(false)
+}
+
+func (c *Core) GetSessionKey() []byte {
+	return []byte(c.badge.Id())
 }

@@ -23,12 +23,10 @@ const (
 func New(
 	appCore *core.Core,
 	address string,
-	emrsSessionId string,
 	cert tls.Certificate) *controller {
 	return &controller{
 		appCore: appCore,
 		address: address,
-		emrsId:  emrsSessionId,
 		tlsCert: cert,
 		wg:      new(sync.WaitGroup),
 	}
@@ -41,7 +39,6 @@ type metricsData struct {
 type controller struct {
 	appCore *core.Core
 	address string
-	emrsId  string
 	tlsCert tls.Certificate
 	running atomic.Bool
 	wg      *sync.WaitGroup
@@ -66,7 +63,7 @@ func (c *controller) Start() error {
 
 	gins := gin.New()
 
-	store := memstore.NewStore([]byte(c.emrsId))
+	store := memstore.NewStore(c.appCore.GetSessionKey())
 
 	gins.Use(sessions.Sessions("emrs", store))
 

@@ -29,8 +29,8 @@
         />
         <button type="submit" class="contrast">Login</button>
       </form>
-      {{if .PrevAttempt }}
-        <b> Invalid </b> Credentials
+      {{if .UserExists }}
+        <b> Error </b> Username already taken
       {{end}}
     </div>
     <div></div>

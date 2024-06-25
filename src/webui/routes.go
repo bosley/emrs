@@ -13,7 +13,6 @@ const (
 	sessionKeyUserId = "user-id" // We may want to change this?
 	loginAttemptKey  = "login-failure"
 	existingUserKey  = "user-exists"
-	userCreatedKey   = "user-created"
 )
 
 func (wc *controller) routeIndex(c *gin.Context) {
@@ -28,16 +27,11 @@ func (wc *controller) routeIndex(c *gin.Context) {
 }
 
 func (wc *controller) routeLogin(c *gin.Context) {
-
-	_, ok := c.Get(loginAttemptKey)
-
-	// TODO: We now need to check if userCreatedKey exists
-	//       if it does, pass that key to the file to welcome them.
-	//       the value in c.Get will be their username
+	_, attempted := c.Get(loginAttemptKey)
 	c.HTML(200, "login.html", gin.H{
 		"PageHeader":  buildPageHeader("Login"),
 		"NavData":     buildNavData(c),
-		"PrevAttempt": ok,
+		"PrevAttempt": attempted,
 	})
 }
 
@@ -130,11 +124,11 @@ func (wc *controller) routeNewUser(c *gin.Context) {
 		return
 	}
 
-	// TODO: If existingUserKey is true then we need to show an
-	//       error message stating the user wasn't created
+	_, exists := c.Get(existingUserKey)
 	c.HTML(200, "new_user.html", gin.H{
 		"NavData":    buildNavData(c),
 		"PageHeader": buildPageHeader("Create User"),
+		"UserExists": exists,
 	})
 }
 
@@ -171,6 +165,5 @@ func (wc *controller) routeCreateUser(c *gin.Context) {
 
 	wc.appCore.IndicateSetupComplete()
 
-	c.Set(userCreatedKey, username)
 	c.Redirect(http.StatusMovedPermanently, "/login")
 }
