@@ -22,7 +22,7 @@ type ServerStore interface {
 }
 
 type UserStore interface {
-	Validate(username string, password string) bool
+	GetAuthHash(username string) *string
 
 	AddUser(name string, password string) error
 

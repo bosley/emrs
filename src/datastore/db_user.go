@@ -13,25 +13,24 @@ type user struct {
 	auth string
 }
 
-func (c *controller) Validate(username string, password string) bool {
-
+func (c *controller) GetAuthHash(username string) *string {
 	u := c.retrieveUser(username)
 	if u == nil {
 		slog.Warn("unable to find user", "name", username)
-		return false
+		return nil
 	}
-
-	slog.Warn("need to check pass")
-
-	// TODO Use badger to check password here
-
-	return password == u.auth
+	return &u.auth
 }
 
 func (c *controller) AddUser(name string, password string) error {
+
+	slog.Debug("checking to see if user exists")
+
 	if u := c.retrieveUser(name); u != nil {
 		return ErrorUserExists
 	}
+
+	slog.Debug("username does not yet exist")
 
 	tx, err := c.db.Begin()
 	if err != nil {
@@ -51,15 +50,16 @@ func (c *controller) AddUser(name string, password string) error {
 		slog.Error("Error tx commit", "err", err.Error())
 		return err
 	}
-
 	return nil
 }
 
 func (c *controller) UpdatePassword(username string, password string) error {
+	slog.Error("NOT YET IMPLEMENTED", "what", "datastore/UpdatePassword")
 	return nil
 }
 
 func (c *controller) DeleteUser(username string) bool {
+	slog.Error("NOT YET IMPLEMENTED", "what", "datastore/DeleteUser")
 	return false
 }
 

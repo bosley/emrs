@@ -20,6 +20,9 @@ const (
 	webAssetDir = "web-static"
 )
 
+/*
+Create a new Web UI
+*/
 func New(
 	appCore *core.Core,
 	address string,
@@ -32,19 +35,35 @@ func New(
 	}
 }
 
+// TODO: We are collecting requests here
+//
+//	but we could be tracking latency and all
+//	sorts of fun stuff
 type metricsData struct {
 	requests atomic.Uint64
 }
 
 type controller struct {
-	appCore *core.Core
+
+	// Actual server information
 	address string
 	tlsCert tls.Certificate
+	srv     *http.Server
+
+	// Execution state
 	running atomic.Bool
 	wg      *sync.WaitGroup
-	srv     *http.Server
-	killOtw atomic.Bool
+
+	// Runtime metrics
 	metrics metricsData
+
+	// When reaping thread flags us we soft-disable the site and begin shutdown
+	//  (site disabled via "ReaperMiddleware")
+	killOtw atomic.Bool
+
+	// Application core stores access to the database interface panel
+	// and is how the application keeps track of state/ etc
+	appCore *core.Core
 }
 
 func (c *controller) Start() error {
