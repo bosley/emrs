@@ -1,6 +1,8 @@
 package core
 
 import (
+	"emrs/badger"
+	ds "emrs/datastore"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -15,11 +17,14 @@ type Service interface {
 }
 
 type Core struct {
+	badge      badger.Badge
 	running    atomic.Bool
 	stats      *stats
 	serviceMgr *serviceManager
 	wg         *sync.WaitGroup
 	relMode    bool
+	dbip       ds.InterfacePanel
+	reqSetup   atomic.Bool
 
 	kt trigger
 }
@@ -28,71 +33,94 @@ type stats struct {
 	start time.Time
 }
 
-func New(releaseMode bool) *Core {
-	return &Core{
+func New(releaseMode bool, dbip ds.InterfacePanel) *Core {
+	c := &Core{
 		stats:      nil,
 		serviceMgr: newServiceManager(),
 		wg:         new(sync.WaitGroup),
 		relMode:    releaseMode,
+		dbip:       dbip,
 	}
+	c.setup()
+	return c
 }
 
-func (e *Core) Start() error {
-	if e.running.Load() {
+func (c *Core) Start() error {
+	if c.running.Load() {
 		return ErrNotPermittedOnline
 	}
 
-	e.running.Store(true)
+	c.running.Store(true)
 
-	if err := e.serviceMgr.start(); err != nil {
-		e.running.Store(false)
+	if err := c.serviceMgr.start(); err != nil {
+		c.running.Store(false)
 		return err
 	}
 
-	e.kt = initReaperIntercept(
-		e.wg,
+	c.kt = initReaperIntercept(
+		c.wg,
 		5*time.Second,
 		func() {
 			slog.Warn("Kill timer activated..")
-			e.broadcastShutdownAlert()
+			c.broadcastShutdownAlert()
 		})
 
 	return nil
 }
 
-func (e *Core) Await() {
-	e.wg.Wait()
+func (c *Core) Await() {
+	c.wg.Wait()
 }
 
-func (e *Core) Stop() error {
-	if !e.running.Load() {
+func (c *Core) Stop() error {
+	if !c.running.Load() {
 		return ErrNotPermittedOffline
 	}
 
-	if err := e.serviceMgr.stop(); err != nil {
+	if err := c.serviceMgr.stop(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (e *Core) IsReleaseMode() bool {
-	return e.relMode
+func (c *Core) IsReleaseMode() bool {
+	return c.relMode
 }
 
-func (e *Core) AddService(name string, service Service) error {
-	if e.running.Load() {
+func (c *Core) AddService(name string, service Service) error {
+	if c.running.Load() {
 		return ErrNotPermittedOnline
 	}
 
-	if err := e.serviceMgr.add(name, service); err != nil {
+	if err := c.serviceMgr.add(name, service); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (e *Core) broadcastShutdownAlert() {
+func (c *Core) broadcastShutdownAlert() {
 
 	slog.Debug("TODO: Tell the services that we are about to shutdown")
+}
+
+func (c *Core) GetUserStore() ds.UserStore {
+	return c.dbip.UserDb
+}
+
+func (c *Core) GetAssetStore() ds.AssetStore {
+	return c.dbip.AssetDb
+}
+
+func (c *Core) RequiresSetup() bool {
+	return c.reqSetup.Load()
+}
+
+func (c *Core) IndicateSetupComplete() {
+	c.reqSetup.Store(false)
+}
+
+func (c *Core) GetSessionKey() []byte {
+	return []byte(c.badge.Id())
 }

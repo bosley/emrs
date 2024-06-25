@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"emrs/core"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
@@ -20,34 +20,50 @@ const (
 	webAssetDir = "web-static"
 )
 
+/*
+Create a new Web UI
+*/
 func New(
 	appCore *core.Core,
 	address string,
-	emrsSessionId string,
 	cert tls.Certificate) *controller {
 	return &controller{
 		appCore: appCore,
 		address: address,
-		emrsId:  emrsSessionId,
 		tlsCert: cert,
 		wg:      new(sync.WaitGroup),
 	}
 }
 
+// TODO: We are collecting requests here
+//
+//	but we could be tracking latency and all
+//	sorts of fun stuff
 type metricsData struct {
 	requests atomic.Uint64
 }
 
 type controller struct {
-	appCore *core.Core
+
+	// Actual server information
 	address string
-	emrsId  string
 	tlsCert tls.Certificate
+	srv     *http.Server
+
+	// Execution state
 	running atomic.Bool
 	wg      *sync.WaitGroup
-	srv     *http.Server
-	killOtw atomic.Bool
+
+	// Runtime metrics
 	metrics metricsData
+
+	// When reaping thread flags us we soft-disable the site and begin shutdown
+	//  (site disabled via "ReaperMiddleware")
+	killOtw atomic.Bool
+
+	// Application core stores access to the database interface panel
+	// and is how the application keeps track of state/ etc
+	appCore *core.Core
 }
 
 func (c *controller) Start() error {
@@ -66,7 +82,7 @@ func (c *controller) Start() error {
 
 	gins := gin.New()
 
-	store := cookie.NewStore([]byte(c.emrsId))
+	store := memstore.NewStore(c.appCore.GetSessionKey())
 
 	gins.Use(sessions.Sessions("emrs", store))
 
@@ -74,19 +90,19 @@ func (c *controller) Start() error {
 	gins.Static("/js", strings.Join([]string{webAssetDir, "js"}, "/emrs/"))
 
 	gins.GET("/", c.routeIndex)
-	/*
-		gins.GET("/login", c.routeLogin)
-		gins.GET("/logout", c.routeLogout)
-		gins.POST("/auth", c.routeAuth)
+	gins.GET("/login", c.routeLogin)
+	gins.GET("/logout", c.routeLogout)
+	gins.POST("/auth", c.routeAuth)
+	gins.POST("/new/user", c.routeNewUser)
+	gins.POST("/create/user", c.routeCreateUser)
 
-		priv := gins.Group("/emrs")
-		priv.Use(c.EmrsAuth())
-		{
-			priv.GET("/status", c.routeStatus)
-			priv.GET("/dashboard", c.routeDashboard)
-			priv.GET("/settings", c.routeSettings)
-		}
-	*/
+	priv := gins.Group("/emrs")
+	priv.Use(c.EmrsAuth())
+	{
+		priv.GET("/status", c.routeStatus)
+		priv.GET("/dashboard", c.routeDashboard)
+		priv.GET("/settings", c.routeSettings)
+	}
 	c.srv = &http.Server{
 		Addr:    c.address,
 		Handler: gins,
@@ -109,9 +125,6 @@ func (c *controller) Start() error {
 	}()
 
 	slog.Info("webui started")
-
-	slog.Warn("TODO: START THE WEB SERVER")
-
 	return nil
 }
 

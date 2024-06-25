@@ -4,4 +4,9 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     ports:
-      - "8080:8080"
+      - "8080:8080" 
+    volumes:
+      - emrs-data:/var/lib/emrs
+
+volumes:
+  emrs-data:
