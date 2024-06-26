@@ -5,25 +5,22 @@ Each of these represents a page that can be displayed to the user.
 Each page must contain at least the following:
 
 ```javascript
-
-class PageNAME {
-
+class PageTerminal {
   constructor(alerts) {
     this.alerts = alerts
-  }
-
-  setSelected() {
-    console.log("PAGE NAME set to selected")
+    this.selected = false
   }
 
   setIdle() {
-    console.log("PAGE NAME set to idle")
+    this.selected = false
   }
 
-  render(contentTag) {
-    console.log("Need to use the given content tag to draw data: " + contentTag)
+  setSelected(contentHook) {
+    this.selected = true
+    $(contentHook).html("term")
   }
 }
+
 ```
 
 ## constructor
@@ -34,20 +31,10 @@ Later on, this will most likely take more information
 
 ## setSelected
 
-Indicates that the user has chosen to view the page. This is NOT a request to
-display the page, rather, its to indicate that very very shortly there will
-most likely be a request to the `render` function (below). The reason its not a guarantee
-is that a user may delect multiple buttons in the UI within the render loop.
+Indicates that the user has selected the UI element for the page. If the item is already selected, we may want to not update, or we may want to. Depends on the contents of the page.
+
+The contentHook passed in is the UI element that will be drawn to
 
 ## setIdle
 
-Indicates that the user has selected a different page. Its possible that this happened
-between `setSelected` and `render`, but either way, it means that the user has unselected
-the page
-
-## render
-
-Takes in `contentTag` which is the hook to which `div` that the page can use
-to draw its data. This function should be lightweight, as it is potentially
-ticked multiple times per-second, and any hold-up here may cause confusion and
-terror to the user
+Indicates that the user has selected a different page.

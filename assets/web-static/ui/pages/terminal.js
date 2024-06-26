@@ -1,22 +1,15 @@
-
-/*
-  Note:
-      All "Page" Objects have to have the "render" method
-*/
 class PageTerminal {
   constructor(alerts) {
     this.alerts = alerts
-  }
-
-  setSelected() {
-    console.log("terminal set to selected")
+    this.selected = false
   }
 
   setIdle() {
-    console.log("terminal set to idle")
+    this.selected = false
   }
 
-  render(contentTag) {
-    console.log("Need to use the given content tag to draw terminal data: " + contentTag)
+  setSelected(contentHook) {
+    this.selected = true
+    $(contentHook).html("term")
   }
 }

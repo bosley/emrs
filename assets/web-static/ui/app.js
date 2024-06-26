@@ -27,11 +27,7 @@ class Application {
     this.loadPage(ApplicationPage.DASHBOARD)
   }
 
-  tick() {
-    this.alerts.tick()
-    this.pages.get(this.page).render(this.contentHook)
-  }
-
+  // Called by UI Hooks set in main.js
   loadPage(pageId) {
     if (this.page === pageId) {
       return
@@ -43,8 +39,7 @@ class Application {
 
     this.page = pageId
 
-    this.pages.get(this.page).setSelected()
+    this.pages.get(this.page).setSelected(this.contentHook)
   }
 }
-
 

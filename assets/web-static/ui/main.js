@@ -1,11 +1,4 @@
 /*
-  The application "ticks" ApplicationTicksPerSecond times every second 
-  to perform updates to the UI
-*/
-const ApplicationTicksPerSecond = 4
-const ApplicationTickInterval = 1000 / ApplicationTicksPerSecond
-
-/*
   UI Element HTML hooks
 */
 const ui_elements = new Map()
@@ -25,10 +18,8 @@ function loadTerminal() {
   app.loadPage(ApplicationPage.TERMINAL)
 }
 
-/*
-  Setup UI update timeouts
-*/
-setTimeout(function tickServer(){
-  app.tick();
-  setTimeout(tickServer, ApplicationTickInterval)
-}, ApplicationTickInterval);
+function alertNotYetDone () {
+  app.alerts.error("not yet implemented")
+}
+
+
