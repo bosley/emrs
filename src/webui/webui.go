@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	webAssetDir = "web-static"
+	webAssetDir = "../assets/web-static"
 )
 
 /*
@@ -87,7 +87,7 @@ func (c *controller) Start() error {
 	gins.Use(sessions.Sessions("emrs", store))
 
 	gins.LoadHTMLGlob(strings.Join([]string{webAssetDir, "templates/*.html"}, "/"))
-	gins.Static("/js", strings.Join([]string{webAssetDir, "js"}, "/emrs/"))
+	gins.Static("/emrs/ui", strings.Join([]string{webAssetDir, "ui"}, "/"))
 
 	gins.GET("/", c.routeIndex)
 	gins.GET("/login", c.routeLogin)
@@ -102,6 +102,7 @@ func (c *controller) Start() error {
 		priv.GET("/status", c.routeStatus)
 		priv.GET("/dashboard", c.routeDashboard)
 		priv.GET("/settings", c.routeSettings)
+    priv.GET("/app", c.routeAppLaunch)
 	}
 	c.srv = &http.Server{
 		Addr:    c.address,

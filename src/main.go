@@ -24,10 +24,11 @@ func main() {
 				})))
 
 	releaseMode := flag.Bool("release", false, "Turn on debug mode")
+	selectedConfig := flag.String("config", configName, "Use specified config file")
 
 	flag.Parse()
 
-	cfg, err := LoadConfig(configName)
+	cfg, err := LoadConfig(*selectedConfig)
 
 	if err != nil {
 		slog.Error(err.Error())
