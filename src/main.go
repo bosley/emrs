@@ -13,11 +13,11 @@ const (
 	configName = "emrs_config.yaml"
 )
 
-var buildInfo = core.BuildInfo {
-  Major: 0,
-  Minor: 0,
-  Patch: 0,
-  Release: false,
+var buildInfo = core.BuildInfo{
+	Major:   0,
+	Minor:   0,
+	Patch:   0,
+	Release: false,
 }
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 
 	flag.Parse()
 
-  buildInfo.Release = *releaseMode
+	buildInfo.Release = *releaseMode
 
 	cfg, err := LoadConfig(*selectedConfig)
 
@@ -59,23 +59,23 @@ func main() {
 
 	dbip, err := datastore.New(cfg.Datastore)
 
-	appCore := core.New(buildInfo, dbip)
-
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
 
+	appCore := core.New(buildInfo, dbip)
+
 	if err := appCore.AddService(
-    "webui", 
-    webui.New(
-      appCore,
-      cfg.GetAddress(),
-      cfg.Assets,
-      cert)); err != nil {
+		"webui",
+		webui.New(
+			appCore,
+			cfg.GetAddress(),
+			cfg.Assets,
+			cert)); err != nil {
 		slog.Error("Failed to add webui service to application core", "error", err.Error())
 		panic("failed to create web ui service")
-  }
+	}
 
 	if err := appCore.Start(); err != nil {
 		slog.Error(err.Error())
@@ -89,4 +89,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-

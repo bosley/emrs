@@ -27,7 +27,7 @@ class AppSession {
 
     $.ajax({
       type: "GET",
-      url: "/emrs/session",
+      url: "/app/session",
       dataType: 'json',
       async: false,
       error: ((function(obj){

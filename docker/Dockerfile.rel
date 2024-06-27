@@ -25,7 +25,6 @@ FROM gcr.io/distroless/base-debian11 AS build-release-stage
 WORKDIR /
 
 COPY --from=build-stage /emrs_config.yaml /emrs_config.yaml
-COPY --from=build-stage /web-static /
 COPY --from=build-stage /emrs /emrs
 COPY --from=build-stage /keys /keys
 COPY --from=build-stage /web /web

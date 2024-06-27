@@ -16,6 +16,18 @@ import (
 	"time"
 )
 
+const (
+	emrsUrlSiteRoot = "/"
+	emrsUrlAuth     = "/auth"
+	emrsUrlLogout   = "/logout"
+
+	emrsUrlNewUser    = "/tmp/new/user/prompt"
+	emrsUrlCreateUser = "/tmp/new/user/process"
+
+	emrsUrlAppRoot       = "/app"
+	emrsUrlAppAssetMount = "/app/ui"
+)
+
 /*
 Create a new Web UI
 */
@@ -88,26 +100,34 @@ func (c *controller) Start() error {
 	gins.Use(sessions.Sessions("emrs", store))
 
 	gins.LoadHTMLGlob(strings.Join([]string{c.assets, "templates/*.html"}, "/"))
-	gins.Static("/emrs/ui", strings.Join([]string{c.assets, "ui"}, "/"))
+	gins.Static(emrsUrlAppAssetMount, strings.Join([]string{c.assets, "ui"}, "/"))
 
-	gins.GET("/", c.routeIndex)
-	gins.GET("/logout", c.routeLogout)
-	gins.POST("/auth", c.routeAuth)
+	gins.GET(emrsUrlSiteRoot, c.routeIndex)
+	gins.GET(emrsUrlLogout, c.routeLogout)
+	gins.POST(emrsUrlAuth, c.routeAuth)
 
 	// These endpoints are only needed the very first time the server
 	// runs. Once the use has an account we don't need the endpoints.
 	// They are soft-disabled once setup is complete, but this way
 	// they stay off
 	if c.appCore.RequiresSetup() {
-		gins.POST("/new/user", c.routeNewUser)
-		gins.POST("/create/user", c.routeCreateUser)
+		gins.GET(emrsUrlNewUser, c.routeNewUser)
+		gins.POST(emrsUrlCreateUser, c.routeCreateUser)
 	}
 
-	priv := gins.Group("/emrs")
+	priv := gins.Group("/app")
 	priv.Use(c.EmrsAuth())
 	{
 		priv.GET("/", c.routeAppLaunch)
 		priv.GET("/session", c.routeSessionInfo)
+		priv.GET("/notifications", c.routeNotificationPoll)
+		priv.GET("/status", c.routeStatus)
+		priv.GET("/dashboard", c.routeDashboard)
+		priv.GET("/settings", c.routeSettings)
+
+		priv.GET("/dev", func(c *gin.Context) {
+			c.HTML(200, "dev.html", gin.H{})
+		})
 	}
 	c.srv = &http.Server{
 		Addr:    c.address,

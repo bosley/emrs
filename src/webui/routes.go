@@ -20,7 +20,7 @@ func (wc *controller) routeIndex(c *gin.Context) {
 	user := getLoggedInUser(c)
 	if user != nil {
 		slog.Debug("user already logged in, redirecting to app")
-		c.Redirect(http.StatusFound, "/emrs")
+		c.Redirect(http.StatusFound, emrsUrlAppRoot)
 		return
 	}
 
@@ -29,24 +29,38 @@ func (wc *controller) routeIndex(c *gin.Context) {
 	_, attempted := c.Get(loginAttemptKey)
 	c.HTML(200, "window.html", gin.H{
 		"Topic":       "Login",
-		"PostTo":      "/auth",
+		"PostTo":      emrsUrlAuth,
 		"Prompt":      "EMRS Login",
 		"Prompting":   true,
 		"PrevAttempt": attempted,
 	})
 }
 
+func (wc *controller) routeNotificationPoll(c *gin.Context) {
+
+	// All notifications/ alerts (like KILL OTW) should be
+	// queued into an area and then dumped out to the
+	// caller over JSON jere
+
+	c.JSON(200, gin.H{
+		"status": "under construction",
+	})
+}
+
 func (wc *controller) routeStatus(c *gin.Context) {
-	c.HTML(200, "status.html", gin.H{})
+	c.JSON(200, gin.H{
+		"status": "under construction",
+	})
 }
 
 func (wc *controller) routeDashboard(c *gin.Context) {
-	c.HTML(200, "dashboard.html", gin.H{})
+	c.JSON(200, gin.H{
+		"status": "under construction",
+	})
 }
 
 func (wc *controller) routeSettings(c *gin.Context) {
-	c.HTML(200, "settings.html", gin.H{})
-}
-func (wc *controller) routeDev(c *gin.Context) {
-	c.HTML(200, "signin.html", gin.H{})
+	c.JSON(200, gin.H{
+		"status": "under construction",
+	})
 }

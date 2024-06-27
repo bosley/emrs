@@ -115,7 +115,7 @@ func (wc *controller) routeAuth(c *gin.Context) {
 
 	slog.Info("user logged in", "user", username)
 
-	c.Redirect(http.StatusMovedPermanently, "/emrs/")
+	c.Redirect(http.StatusMovedPermanently, emrsUrlAppRoot)
 }
 
 /*
@@ -174,7 +174,7 @@ func (wc *controller) routeCreateUser(c *gin.Context) {
 	//
 	wc.appCore.IndicateSetupComplete()
 
-	c.Redirect(http.StatusMovedPermanently, "/")
+	c.Redirect(http.StatusMovedPermanently, emrsUrlSiteRoot)
 }
 
 /*
@@ -201,7 +201,7 @@ func (wc *controller) routeNewUser(c *gin.Context) {
 		"Topic":       "Create Account",
 		"Prompting":   true,
 		"PrevAttempt": false,
-		"PostTo":      "/create/user",
+		"PostTo":      emrsUrlCreateUser,
 		"Prompt":      "EMRS New User",
 		"UserExists":  exists,
 	})
