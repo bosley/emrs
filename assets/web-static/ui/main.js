@@ -19,7 +19,13 @@ function loadTerminal() {
 }
 
 function alertNotYetDone () {
+
+  // This isn't required, but technically it should happen
+  app.auth()
   app.alerts.error("not yet implemented")
 }
 
-
+function performLogout() {
+  app.quit()
+  delete app
+}

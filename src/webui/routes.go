@@ -35,3 +35,8 @@ func (wc *controller) routeSettings(c *gin.Context) {
 		"PageHeader": buildPageHeader("Settings"),
 	})
 }
+func (wc *controller) routeDev(c *gin.Context) {
+	c.HTML(200, "signin.html", gin.H{
+		"Title":   "DEV PAGE", 
+	})
+}

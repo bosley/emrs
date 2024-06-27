@@ -2,7 +2,7 @@
   The various pages that the user can load in the UI
 */
 const ApplicationPage = Object.freeze({
-  NONE: 0,
+  NONE: 0,      // For uninit case
   DASHBOARD: 1,
   TERMINAL: 2
 });
@@ -15,7 +15,11 @@ const ApplicationPage = Object.freeze({
 */
 class Application {
   constructor(ui_elements) {
+
+    this.session_valid = false;
     this.page = ApplicationPage.NONE
+
+    this.auth()
 
     this.contentHook = ui_elements.get("content")
     this.alerts = new Alerts(ui_elements.get("alerts"))
@@ -27,8 +31,62 @@ class Application {
     this.loadPage(ApplicationPage.DASHBOARD)
   }
 
+  validateSession() {
+    // We can determine if the user's session is still valid by attempting
+    // to access a protected region of the server /emrs. If we get anything
+    // other than success, the session is no longer valid
+    $.ajax({
+      type: "GET",
+      url: "/emrs",
+      async: false,
+      error: ((function(obj){
+        return function(){ 
+          obj.session_valid = false;
+          console.log("session no longer valid")
+        }
+      })(this)),
+      success: ((function(obj){
+        return function(){
+          obj.session_valid = true;
+        }
+      })(this))
+    })
+  }
+
+  // Ensure that the user is still authorized, or redirect to main EMRS page
+  auth() {
+    this.validateSession()
+    if (this.session_valid) {
+      return
+    }
+    this.unauthorized()
+  }
+
+  // Shutdown the app and logout the user
+  quit() {
+    this.alerts.warning("logging out")
+
+    if (this.session_valid) {
+      this.session_valid = false
+      location.href = "/logout"
+    } else {
+      location.href = "/"
+    }
+  }
+
+  // Redirect an unauthorized session to main EMRS page
+  unauthorized() {
+    console.log("unauthorized session detected")
+    location.href = "/"
+  }
+
   // Called by UI Hooks set in main.js
+  // Checks the user's session to ensure that we are still
+  // using an authenticated session
   loadPage(pageId) {
+
+    this.auth()
+
     if (this.page === pageId) {
       return
     }

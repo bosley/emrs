@@ -89,8 +89,7 @@ func (c *controller) Start() error {
 	gins.LoadHTMLGlob(strings.Join([]string{webAssetDir, "templates/*.html"}, "/"))
 	gins.Static("/emrs/ui", strings.Join([]string{webAssetDir, "ui"}, "/"))
 
-	gins.GET("/", c.routeIndex)
-	gins.GET("/login", c.routeLogin)
+	gins.GET("/", c.routeLogin)
 	gins.GET("/logout", c.routeLogout)
 	gins.POST("/auth", c.routeAuth)
 	gins.POST("/new/user", c.routeNewUser)
@@ -99,10 +98,14 @@ func (c *controller) Start() error {
 	priv := gins.Group("/emrs")
 	priv.Use(c.EmrsAuth())
 	{
+    priv.GET("/", c.routeAppLaunch)
+    /*
 		priv.GET("/status", c.routeStatus)
 		priv.GET("/dashboard", c.routeDashboard)
 		priv.GET("/settings", c.routeSettings)
     priv.GET("/app", c.routeAppLaunch)
+    priv.GET("/dev", c.routeDev)
+    */
 	}
 	c.srv = &http.Server{
 		Addr:    c.address,

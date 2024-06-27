@@ -115,7 +115,7 @@ func (wc *controller) routeAuth(c *gin.Context) {
 
 	slog.Info("user logged in", "user", username)
 
-	c.Redirect(http.StatusMovedPermanently, "/emrs/dashboard")
+	c.Redirect(http.StatusMovedPermanently, "/emrs/")
 }
 
 /*

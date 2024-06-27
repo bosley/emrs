@@ -1,71 +1,7 @@
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EMRS App</title>
+{{ template "app_header" . }}
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-
-<!-- Optional theme -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
-
-<!-- Latest compiled and minified JavaScript -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-</head>
-
-<div class="container">
-<nav class="navbar navbar-default">
-  <div class="container-fluid">
-    <!-- Brand and toggle get grouped for better mobile display -->
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="#">EMRS <span class="glyphicon glyphicon-leaf"></span>  </a>
-    </div>
-
-    <!-- Collect the nav links, forms, and other content for toggling -->
-    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-      <ul class="nav navbar-nav">
-        <li><a href="javascript:loadDashboard();">Dashboard</a></li>
-        <li><a href="javascript:loadTerminal();">Terminal</a></li>
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">System<span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <li><a href="javascript:alertNotYetDone();">Network Editor</a></li>
-            <li><a href="javascript:alertNotYetDone();">Watchdog Editor</a></li>
-            <li><a href="javascript:alertNotYetDone();">Sentinals</a></li>
-            <li><a href="javascript:alertNotYetDone();">Vouchers</a></li>
-          </ul>
-        </li>
-      </ul>
-      <ul class="nav navbar-nav navbar-right">
-        <li>
-          <span class="navbar-text">
-            v.0.0.0 
-          </span>
-        </li>
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Account<span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <li><a href="javascript:alertNotYetDone();">Settings</a></li>
-            <li><a href="javascript:alertNotYetDone();">Logout</a></li>
-            <li role="separator" class="divider"></li>
-            <li><a href="javascript:alertNotYetDone();">Support</a></li>
-          </ul>
-        </li>
-      </ul>
-    </div><!-- /.navbar-collapse -->
-  </div><!-- /.container-fluid -->
-</nav>
-</div>
+{{ template "app_nav" . }}
 
 <div class="container", id="emrs_app_alerts"></div>
 
@@ -75,11 +11,10 @@
   </body>
 </div>
 
-<!-- TODO: Make a go template for these -->
 <script src="ui/pages/terminal.js"></script>
 <script src="ui/pages/dashboard.js"></script>
 <script src="ui/alerts.js"></script>
 <script src="ui/app.js"></script>
 <script src="ui/main.js"></script>
 
-</html>
+{{ template "app_footer" . }}
