@@ -10,12 +10,11 @@ import (
 func (wc *controller) EmrsAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if getLoggedInUser(c) == nil {
-			c.HTML(http.StatusUnauthorized, "message.html", gin.H{
-				"NavData":    buildNavData(c),
-				"PageHeader": buildPageHeader("Access denied"),
-				"Message":    "You don't have permission.",
-				"ShowLogin":  true,
-			})
+	    c.HTML(http.StatusUnauthorized, "window.html", gin.H{
+        "Prompting": false,
+        "Message": "You don't have permission",
+        "ShowLogin": true,
+	    })
 			c.Abort()
 			return
 		}

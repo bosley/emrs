@@ -5,3 +5,4 @@ port: 8080
 key: "../dev/keys/server.key"
 cert: "../dev/keys/server.crt"
 datastore: "/tmp/main.db"
+assets: "../assets/web"

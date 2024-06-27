@@ -29,19 +29,21 @@ func (c *Core) setup() {
 		// Flag
 		c.reqSetup.Store(true)
 
-	} else {
+    slog.Debug("generated core identity - need to run setup", "id", badge.Id())
 
-		// Not the first time, load the server identity
-		badge, err := badger.DecodeIdentityString(*identity)
-		if err != nil {
-			slog.Error(err.Error())
-			panic("failed to decode server identity")
-		}
-		c.badge = badge
-
-		// Flag
-		c.reqSetup.Store(false)
-
-		slog.Debug("loaded core identity", "id", badge.Id())
+    return
 	}
+
+	// Not the first time, load the server identity
+	badge, err := badger.DecodeIdentityString(*identity)
+	if err != nil {
+		slog.Error(err.Error())
+		panic("failed to decode server identity")
+	}
+	c.badge = badge
+
+	// Flag
+	c.reqSetup.Store(false)
+
+	slog.Debug("loaded core identity", "id", badge.Id())
 }

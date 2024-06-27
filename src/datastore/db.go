@@ -15,12 +15,7 @@ const (
 
 type controller struct {
 	running atomic.Bool
-	newDb   bool
 	db      *sql.DB
-}
-
-func (c *controller) IsNew() bool {
-	return c.newDb
 }
 
 func (c *controller) Close() {

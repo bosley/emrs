@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>EMRS</title>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" />
+  </head>
+  
+  <body>
+    <!-- Main -->
+    <main class="container">
+      <article class="grid">
+        <div></div>
+        <div>
+{{if .Prompting }}
+          <hgroup>
+            <h1>{{ .Topic }}</h1>
+            <p>{{ .Prompt }}</p>
+          </hgroup>
+          <form action= {{ .PostTo }} method="post">
+            <input
+              type="text"
+              name="username"
+              placeholder="username"
+              aria-label="Login"
+              autocomplete="username"
+              required
+            />
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              aria-label="Password"
+              autocomplete="current-password"
+              required
+            />
+            <button type="submit" class="contrast">Login</button>
+          </form>
+  {{if .PrevAttempt }}
+            <b> Invalid </b> Credentials
+  {{end}}
+  {{if .UserExists }}
+            <b> Error </b> Username already taken
+  {{end}}
+{{else}}
+          <hgroup>
+            <strong>
+              <center>
+                {{ .Message }}
+              </center>
+            </strong>
+          </hgroup>
+          <p>
+  {{if .ShowLogin }}
+          <button class="contrast" OnClick="location.href='/'">Log In</button>
+  {{end}}
+          <p>
+{{end}}
+        </div>
+        <div></div>
+      </article>
+    </main>
+    <!-- ./ Main -->
+    <footer class="container-fluid">
+    </footer>
+  </body>
+</html>

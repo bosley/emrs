@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"emrs/core"
 	"emrs/datastore"
 	"emrs/webui"
@@ -14,6 +13,13 @@ const (
 	configName = "emrs_config.yaml"
 )
 
+var buildInfo = core.BuildInfo {
+  Major: 0,
+  Minor: 0,
+  Patch: 0,
+  Release: false,
+}
+
 func main() {
 
 	slog.SetDefault(
@@ -23,10 +29,12 @@ func main() {
 					Level: slog.LevelDebug,
 				})))
 
-	releaseMode := flag.Bool("release", false, "Turn on debug mode")
+	releaseMode := flag.Bool("release", buildInfo.Release, "Turn on debug mode")
 	selectedConfig := flag.String("config", configName, "Use specified config file")
 
 	flag.Parse()
+
+  buildInfo.Release = *releaseMode
 
 	cfg, err := LoadConfig(*selectedConfig)
 
@@ -51,17 +59,23 @@ func main() {
 
 	dbip, err := datastore.New(cfg.Datastore)
 
-	appCore := core.New(*releaseMode, dbip)
+	appCore := core.New(buildInfo, dbip)
 
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
 
-	setupServiceWebUi(
-		appCore,
-		cfg.GetAddress(),
-		cert)
+	if err := appCore.AddService(
+    "webui", 
+    webui.New(
+      appCore,
+      cfg.GetAddress(),
+      cfg.Assets,
+      cert)); err != nil {
+		slog.Error("Failed to add webui service to application core", "error", err.Error())
+		panic("failed to create web ui service")
+  }
 
 	if err := appCore.Start(); err != nil {
 		slog.Error(err.Error())
@@ -76,10 +90,3 @@ func main() {
 	}
 }
 
-func setupServiceWebUi(appCore *core.Core, address string, cert tls.Certificate) {
-	err := appCore.AddService("webui", webui.New(appCore, address, cert))
-	if err != nil {
-		slog.Error("Failed to add webui service to application core", "error", err.Error())
-		panic("failed to create webui")
-	}
-}

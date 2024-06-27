@@ -17,18 +17,6 @@ const (
 )
 
 /*
-Posts to /auth (routeAuth) - shown below
-*/
-func (wc *controller) routeLogin(c *gin.Context) {
-	_, attempted := c.Get(loginAttemptKey)
-	c.HTML(200, "login.html", gin.H{
-		"PageHeader":  buildPageHeader("Login"),
-		"NavData":     buildNavData(c),
-		"PrevAttempt": attempted,
-	})
-}
-
-/*
 Retrieves the user data from the session and deletes it.
 Once this occurs we send the user to the friendly "message"
 page where we same something factual and offer a button to
@@ -51,11 +39,10 @@ func (wc *controller) routeLogout(c *gin.Context) {
 		return
 	}
 
-	c.HTML(200, "message.html", gin.H{
-		"NavData":    buildNavData(c),
-		"PageHeader": buildPageHeader("Logged Out"),
-		"Message":    "You have been logged out",
-		"ShowLogin":  true,
+	c.HTML(200, "window.html", gin.H{
+    "Prompting": false,
+    "Message": "You have been logged out",
+    "ShowLogin": true,
 	})
 }
 
@@ -101,12 +88,25 @@ func (wc *controller) routeAuth(c *gin.Context) {
 		badger.RawIsHashMatch([]byte(password), []byte(*storedHash)) != nil {
 		slog.Warn("auth failure", "user", username)
 		c.Set(loginAttemptKey, true)
-		wc.routeLogin(c)
+		wc.routeIndex(c)
 		return
 	}
 	slog.Warn("auth success", "user", username)
 
-	session.Set(sessionKeyUserId, username)
+  userbadge, err := badger.New(badger.Config{
+    Nickname: username,
+  })
+
+  if err != nil {
+	  slog.Warn("badger failure", "user", username, "error", err.Error())
+	  c.JSON(500, gin.H{
+      "code": 500,
+      "message": err.Error(),
+	  })
+    return 
+  }
+
+	session.Set(sessionKeyUserId, userbadge.EncodeIdentityString())
 
 	if err := session.Save(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
@@ -138,12 +138,11 @@ func (wc *controller) routeAuth(c *gin.Context) {
 func (wc *controller) routeCreateUser(c *gin.Context) {
 
 	if !wc.appCore.RequiresSetup() {
-		c.HTML(http.StatusUnauthorized, "message.html", gin.H{
-			"NavData":    buildNavData(c),
-			"PageHeader": buildPageHeader("Not Available"),
-			"Message":    "Creating users is an unauthorized action after initial setup",
-			"ShowLogin":  false,
-		})
+	  c.HTML(http.StatusUnauthorized, "window.html", gin.H{
+      "Prompting": false,
+      "Message": "Creating users is an unauthorized action after initial setup",
+      "ShowLogin": false,
+	  })
 		return
 	}
 
@@ -175,7 +174,7 @@ func (wc *controller) routeCreateUser(c *gin.Context) {
 	//
 	wc.appCore.IndicateSetupComplete()
 
-	c.Redirect(http.StatusMovedPermanently, "/login")
+	c.Redirect(http.StatusMovedPermanently, "/")
 }
 
 /*
@@ -186,20 +185,50 @@ and then posts to /create/user (above)
 */
 func (wc *controller) routeNewUser(c *gin.Context) {
 
+  slog.Debug("Creating new user")
+
 	if !wc.appCore.RequiresSetup() {
-		c.HTML(http.StatusUnauthorized, "message.html", gin.H{
-			"NavData":    buildNavData(c),
-			"PageHeader": buildPageHeader("Not Available"),
-			"Message":    "Creating users is an unauthorized action after initial setup",
-			"ShowLogin":  false,
-		})
+	  c.HTML(http.StatusUnauthorized, "window.html", gin.H{
+      "Prompting": false,
+      "Message": "Creating users is an unauthorized action after initial setup",
+      "ShowLogin": false,
+	  })
 		return
 	}
 
 	_, exists := c.Get(existingUserKey)
-	c.HTML(200, "new_user.html", gin.H{
-		"NavData":    buildNavData(c),
-		"PageHeader": buildPageHeader("Create User"),
+	c.HTML(200, "window.html", gin.H{
+    "Topic": "Create Account",
+    "Prompting": true,
+		"PrevAttempt": false,
+    "PostTo": "/create/user",
+    "Prompt": "EMRS New User",
 		"UserExists": exists,
+	})
+}
+
+func (wc *controller) routeSessionInfo(c *gin.Context) {
+  userInfo := getLoggedInUser(c)
+  if userInfo == nil {
+	  c.JSON(500, gin.H{
+      "code": 500,
+      "message": "Unable to retrieve user information",
+	  })
+    return
+  }
+
+  badge, err := badger.DecodeIdentityString(userInfo.(string))
+  if err != nil {
+	  c.JSON(500, gin.H{
+      "code": 500,
+      "message": err.Error(),
+	  })
+    return
+  }
+
+	c.JSON(200, gin.H{
+    "session": badge.Id(),
+    "user": badge.Nickname(),
+    "version": wc.appCore.GetVersion(),
 	})
 }

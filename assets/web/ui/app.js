@@ -16,10 +16,18 @@ const ApplicationPage = Object.freeze({
 class Application {
   constructor(ui_elements) {
 
-    this.session_valid = false;
+    this.session = new AppSession()
+
     this.page = ApplicationPage.NONE
 
     this.auth()
+
+    $(ui_elements.get("user_display")).html(
+      this.session.user + 
+      '<span class="caret">')
+
+    $(ui_elements.get("version_display")).html(
+      this.session.version)
 
     this.contentHook = ui_elements.get("content")
     this.alerts = new Alerts(ui_elements.get("alerts"))
@@ -31,32 +39,10 @@ class Application {
     this.loadPage(ApplicationPage.DASHBOARD)
   }
 
-  validateSession() {
-    // We can determine if the user's session is still valid by attempting
-    // to access a protected region of the server /emrs. If we get anything
-    // other than success, the session is no longer valid
-    $.ajax({
-      type: "GET",
-      url: "/emrs",
-      async: false,
-      error: ((function(obj){
-        return function(){ 
-          obj.session_valid = false;
-          console.log("session no longer valid")
-        }
-      })(this)),
-      success: ((function(obj){
-        return function(){
-          obj.session_valid = true;
-        }
-      })(this))
-    })
-  }
-
   // Ensure that the user is still authorized, or redirect to main EMRS page
   auth() {
-    this.validateSession()
-    if (this.session_valid) {
+    this.session.validate()
+    if (this.session.isValid()) {
       return
     }
     this.unauthorized()
@@ -65,9 +51,8 @@ class Application {
   // Shutdown the app and logout the user
   quit() {
     this.alerts.warning("logging out")
-
-    if (this.session_valid) {
-      this.session_valid = false
+    if (this.session.isValid()) {
+      this.session.quit()
       location.href = "/logout"
     } else {
       location.href = "/"

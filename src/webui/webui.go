@@ -16,21 +16,19 @@ import (
 	"time"
 )
 
-const (
-	webAssetDir = "../assets/web-static"
-)
-
 /*
 Create a new Web UI
 */
 func New(
 	appCore *core.Core,
 	address string,
+  assets string,
 	cert tls.Certificate) *controller {
 	return &controller{
 		appCore: appCore,
 		address: address,
 		tlsCert: cert,
+    assets:  assets,
 		wg:      new(sync.WaitGroup),
 	}
 }
@@ -44,6 +42,9 @@ type metricsData struct {
 }
 
 type controller struct {
+
+  // Directory of static assets
+	assets string
 
 	// Actual server information
 	address string
@@ -86,26 +87,27 @@ func (c *controller) Start() error {
 
 	gins.Use(sessions.Sessions("emrs", store))
 
-	gins.LoadHTMLGlob(strings.Join([]string{webAssetDir, "templates/*.html"}, "/"))
-	gins.Static("/emrs/ui", strings.Join([]string{webAssetDir, "ui"}, "/"))
+	gins.LoadHTMLGlob(strings.Join([]string{c.assets, "templates/*.html"}, "/"))
+	gins.Static("/emrs/ui", strings.Join([]string{c.assets, "ui"}, "/"))
 
-	gins.GET("/", c.routeLogin)
+	gins.GET("/", c.routeIndex)
 	gins.GET("/logout", c.routeLogout)
 	gins.POST("/auth", c.routeAuth)
-	gins.POST("/new/user", c.routeNewUser)
-	gins.POST("/create/user", c.routeCreateUser)
+
+  // These endpoints are only needed the very first time the server
+  // runs. Once the use has an account we don't need the endpoints.
+  // They are soft-disabled once setup is complete, but this way
+  // they stay off
+  if c.appCore.RequiresSetup() {
+	  gins.POST("/new/user", c.routeNewUser)
+	  gins.POST("/create/user", c.routeCreateUser)
+  }
 
 	priv := gins.Group("/emrs")
 	priv.Use(c.EmrsAuth())
 	{
     priv.GET("/", c.routeAppLaunch)
-    /*
-		priv.GET("/status", c.routeStatus)
-		priv.GET("/dashboard", c.routeDashboard)
-		priv.GET("/settings", c.routeSettings)
-    priv.GET("/app", c.routeAppLaunch)
-    priv.GET("/dev", c.routeDev)
-    */
+    priv.GET("/session", c.routeSessionInfo)
 	}
 	c.srv = &http.Server{
 		Addr:    c.address,
