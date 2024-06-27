@@ -42,10 +42,10 @@ type EncodedIdentity struct {
 }
 
 func New(cfg Config) (Badge, error) {
-  id, err := MakeId()
-  if err != nil {
-    return nil, err
-  }
+	id, err := MakeId()
+	if err != nil {
+		return nil, err
+	}
 	return &identity{
 		nickname: cfg.Nickname,
 		key:      generateKeyPair(),
@@ -54,18 +54,18 @@ func New(cfg Config) (Badge, error) {
 }
 
 func MakeId() (string, error) {
-  b := make([]byte, 16)
+	b := make([]byte, 16)
 	_, err := rand.Read(b)
 	if err != nil {
 		return "", err
 	}
-  return fmt.Sprintf(
-			"%x-%x-%x-%x-%x",
-			b[0:4],
-			b[4:6],
-			b[6:8],
-			b[8:10],
-			b[10:]), nil
+	return fmt.Sprintf(
+		"%x-%x-%x-%x-%x",
+		b[0:4],
+		b[4:6],
+		b[6:8],
+		b[8:10],
+		b[10:]), nil
 }
 
 func zeroArr(raw []byte) {

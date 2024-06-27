@@ -29,9 +29,9 @@ func (c *Core) setup() {
 		// Flag
 		c.reqSetup.Store(true)
 
-    slog.Debug("generated core identity - need to run setup", "id", badge.Id())
+		slog.Debug("generated core identity - need to run setup", "id", badge.Id())
 
-    return
+		return
 	}
 
 	// Not the first time, load the server identity

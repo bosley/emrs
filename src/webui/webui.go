@@ -22,13 +22,13 @@ Create a new Web UI
 func New(
 	appCore *core.Core,
 	address string,
-  assets string,
+	assets string,
 	cert tls.Certificate) *controller {
 	return &controller{
 		appCore: appCore,
 		address: address,
 		tlsCert: cert,
-    assets:  assets,
+		assets:  assets,
 		wg:      new(sync.WaitGroup),
 	}
 }
@@ -43,7 +43,7 @@ type metricsData struct {
 
 type controller struct {
 
-  // Directory of static assets
+	// Directory of static assets
 	assets string
 
 	// Actual server information
@@ -94,20 +94,20 @@ func (c *controller) Start() error {
 	gins.GET("/logout", c.routeLogout)
 	gins.POST("/auth", c.routeAuth)
 
-  // These endpoints are only needed the very first time the server
-  // runs. Once the use has an account we don't need the endpoints.
-  // They are soft-disabled once setup is complete, but this way
-  // they stay off
-  if c.appCore.RequiresSetup() {
-	  gins.POST("/new/user", c.routeNewUser)
-	  gins.POST("/create/user", c.routeCreateUser)
-  }
+	// These endpoints are only needed the very first time the server
+	// runs. Once the use has an account we don't need the endpoints.
+	// They are soft-disabled once setup is complete, but this way
+	// they stay off
+	if c.appCore.RequiresSetup() {
+		gins.POST("/new/user", c.routeNewUser)
+		gins.POST("/create/user", c.routeCreateUser)
+	}
 
 	priv := gins.Group("/emrs")
 	priv.Use(c.EmrsAuth())
 	{
-    priv.GET("/", c.routeAppLaunch)
-    priv.GET("/session", c.routeSessionInfo)
+		priv.GET("/", c.routeAppLaunch)
+		priv.GET("/session", c.routeSessionInfo)
 	}
 	c.srv = &http.Server{
 		Addr:    c.address,

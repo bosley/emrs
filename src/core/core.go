@@ -3,18 +3,18 @@ package core
 import (
 	"emrs/badger"
 	ds "emrs/datastore"
+	"fmt"
 	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
-  "fmt"
 )
 
 type BuildInfo struct {
-  Major int
-  Minor int
-  Patch int
-  Release bool
+	Major   int
+	Minor   int
+	Patch   int
+	Release bool
 }
 
 type Service interface {
@@ -25,7 +25,7 @@ type Service interface {
 }
 
 type Core struct {
-  build      BuildInfo
+	build      BuildInfo
 	badge      badger.Badge
 	running    atomic.Bool
 	stats      *stats
@@ -44,7 +44,7 @@ type stats struct {
 
 func New(info BuildInfo, dbip ds.InterfacePanel) *Core {
 	c := &Core{
-    build:      info,
+		build:      info,
 		stats:      nil,
 		serviceMgr: newServiceManager(),
 		wg:         new(sync.WaitGroup),
@@ -136,13 +136,13 @@ func (c *Core) GetSessionKey() []byte {
 }
 
 func (c *Core) GetVersion() string {
-  releaseStr := "debug"
-  if c.build.Release {
-    releaseStr = "rel"
-  }
-  return fmt.Sprintf("v %d.%d.%d (%s)",
-    c.build.Major,
-    c.build.Minor,
-    c.build.Patch,
-    releaseStr)
+	releaseStr := "debug"
+	if c.build.Release {
+		releaseStr = "rel"
+	}
+	return fmt.Sprintf("v %d.%d.%d (%s)",
+		c.build.Major,
+		c.build.Minor,
+		c.build.Patch,
+		releaseStr)
 }

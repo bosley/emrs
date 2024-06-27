@@ -40,9 +40,9 @@ func (wc *controller) routeLogout(c *gin.Context) {
 	}
 
 	c.HTML(200, "window.html", gin.H{
-    "Prompting": false,
-    "Message": "You have been logged out",
-    "ShowLogin": true,
+		"Prompting": false,
+		"Message":   "You have been logged out",
+		"ShowLogin": true,
 	})
 }
 
@@ -93,18 +93,18 @@ func (wc *controller) routeAuth(c *gin.Context) {
 	}
 	slog.Warn("auth success", "user", username)
 
-  userbadge, err := badger.New(badger.Config{
-    Nickname: username,
-  })
+	userbadge, err := badger.New(badger.Config{
+		Nickname: username,
+	})
 
-  if err != nil {
-	  slog.Warn("badger failure", "user", username, "error", err.Error())
-	  c.JSON(500, gin.H{
-      "code": 500,
-      "message": err.Error(),
-	  })
-    return 
-  }
+	if err != nil {
+		slog.Warn("badger failure", "user", username, "error", err.Error())
+		c.JSON(500, gin.H{
+			"code":    500,
+			"message": err.Error(),
+		})
+		return
+	}
 
 	session.Set(sessionKeyUserId, userbadge.EncodeIdentityString())
 
@@ -138,11 +138,11 @@ func (wc *controller) routeAuth(c *gin.Context) {
 func (wc *controller) routeCreateUser(c *gin.Context) {
 
 	if !wc.appCore.RequiresSetup() {
-	  c.HTML(http.StatusUnauthorized, "window.html", gin.H{
-      "Prompting": false,
-      "Message": "Creating users is an unauthorized action after initial setup",
-      "ShowLogin": false,
-	  })
+		c.HTML(http.StatusUnauthorized, "window.html", gin.H{
+			"Prompting": false,
+			"Message":   "Creating users is an unauthorized action after initial setup",
+			"ShowLogin": false,
+		})
 		return
 	}
 
@@ -185,50 +185,50 @@ and then posts to /create/user (above)
 */
 func (wc *controller) routeNewUser(c *gin.Context) {
 
-  slog.Debug("Creating new user")
+	slog.Debug("Creating new user")
 
 	if !wc.appCore.RequiresSetup() {
-	  c.HTML(http.StatusUnauthorized, "window.html", gin.H{
-      "Prompting": false,
-      "Message": "Creating users is an unauthorized action after initial setup",
-      "ShowLogin": false,
-	  })
+		c.HTML(http.StatusUnauthorized, "window.html", gin.H{
+			"Prompting": false,
+			"Message":   "Creating users is an unauthorized action after initial setup",
+			"ShowLogin": false,
+		})
 		return
 	}
 
 	_, exists := c.Get(existingUserKey)
 	c.HTML(200, "window.html", gin.H{
-    "Topic": "Create Account",
-    "Prompting": true,
+		"Topic":       "Create Account",
+		"Prompting":   true,
 		"PrevAttempt": false,
-    "PostTo": "/create/user",
-    "Prompt": "EMRS New User",
-		"UserExists": exists,
+		"PostTo":      "/create/user",
+		"Prompt":      "EMRS New User",
+		"UserExists":  exists,
 	})
 }
 
 func (wc *controller) routeSessionInfo(c *gin.Context) {
-  userInfo := getLoggedInUser(c)
-  if userInfo == nil {
-	  c.JSON(500, gin.H{
-      "code": 500,
-      "message": "Unable to retrieve user information",
-	  })
-    return
-  }
+	userInfo := getLoggedInUser(c)
+	if userInfo == nil {
+		c.JSON(500, gin.H{
+			"code":    500,
+			"message": "Unable to retrieve user information",
+		})
+		return
+	}
 
-  badge, err := badger.DecodeIdentityString(userInfo.(string))
-  if err != nil {
-	  c.JSON(500, gin.H{
-      "code": 500,
-      "message": err.Error(),
-	  })
-    return
-  }
+	badge, err := badger.DecodeIdentityString(userInfo.(string))
+	if err != nil {
+		c.JSON(500, gin.H{
+			"code":    500,
+			"message": err.Error(),
+		})
+		return
+	}
 
 	c.JSON(200, gin.H{
-    "session": badge.Id(),
-    "user": badge.Nickname(),
-    "version": wc.appCore.GetVersion(),
+		"session": badge.Id(),
+		"user":    badge.Nickname(),
+		"version": wc.appCore.GetVersion(),
 	})
 }
