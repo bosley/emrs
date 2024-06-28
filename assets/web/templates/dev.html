@@ -1,42 +1,274 @@
-<html>
+<!DOCTYPE html>
+
+<html lang="en">
 
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMRS App</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
 </head>
 
-<body>
-
 <style>
+
 
 .boxed {
   border-style: solid;
   border-color: black;
-  border-width: thin;
+  border-width: 1px;
   padding: 10;
 }
 
+.center-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 100vh;
+}
+
+.shadowed {
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.button-black {
+  background-color: black;
+  border-color: black;
+}
+
+.button-black.button-clear,
+.button-black.button-outline {
+  background-color: transparent;
+  color: black;
+}
+.button-black.button-clear {
+  border-color: transparent;
+}
+
+nav {
+  height: 100%;
+  width: 160px;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  overflow-x: hidden;
+  padding-top: 20px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+main {
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  padding-top: 100px;
+  padding-left: 200px;
+}
+
+.user-display {
+  font-family: 'Roboto Slab', serif;
+  text-align: center;
+  color: black;
+}
+
+.user-info-tile {
+  min-height: 100px;
+  border-style: solid;
+  border-color: black;
+  border-width: 1px;
+  padding: 10;
+
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.action-tile {
+  font-family: 'Roboto Slab', serif;
+  min-height: 8%;
+  min-width: 100%;
+  background-color: transparent;
+  color: black;
+  border-color: transparent;
+  height: 2.8rem;
+  line-height: 7rem;
+  text-align: center;
+}
+
+.emrs-control-tile {
+  min-width: 100%;
+  min-height: 100%;
+  line-height: 7rem;
+  text-align: center;
+
+  background-color: transparent;
+  border-style: dotted;
+  border-color: black;
+  border-width: 1px;
+}
+
+.emrs-control-tile:hover,
+.action-tile:hover {
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+  filter: blur(0.113rem);
+}
+
+.emrs-listing-filler {
+  min-height: 20px;
+  background-color: transparent;
+}
+
+.pfp {
+  border-radius: 25px;
+  background: url(paper.gif);
+  background-position: left top;
+  background-repeat: repeat;
+  padding: 20px;
+  width: 200px;
+  height: 150px;
+}
+
+
+input[type=text]:active, input[type=text]:focus {
+  border-color: black;
+}
+
+input[type=password]:active, input[type=password]:focus {
+  border-color: black;
+  filter: blur(0.113rem);
+}
 </style>
+<body>
+      <!-- LHS Nav Bar -->
+      <nav>
+        <!-- Nav Contents -->
+          <div class=" user-info-tile  ">
+            <img class="pfp" src="https://picsum.photos/200.jpg">
+            <div class="user-display" id="emrs_user_name">
+              bosley
+            </div>
+          </div>
+          <div class="action-tile" onclick="console.log('Dashboard')">
+              Dashboard 
+          </div>
+          <div class="action-tile" onclick="console.log('Terminal')">
+              Terminal 
+          </div>
+          <div class="action-tile" onclick="console.log('Settings')">
+              Settings 
+          </div>
+          <div class="action-tile" onclick="console.log('Logout')">
+              Logout
+          </div>
+      </nav>
+      <!-- /LHS Nav Bar -->
 
-<div class="container">
+      <main>
+        <div class="row">
+          <div class="column column-50">
+            <div class="emrs-control-tile shadowed">
+              <b>bosley:/home</b>
+            </div>
+          </div>
+        </div>
 
-  <div class="row">
-    <div class="column boxed">.column</div>
-    <div class="column">.column</div>
-    <div class="column">
+        <div class="row">
+          <div class="column column-50">
+            <div class="emrs-listing-filler"></div>
+          </div>
+        </div>
 
-<button class="button button-clear">Clear Button</button>
-      </div>
-    <div class="column">.column</div>
-  </div>
+        <div class="row">
+          <div class="column column-50">
+            <div class="emrs-control-tile shadowed">
+              <b>bosley:/weather-station</b>
+            </div>
+          </div>
+        </div>
 
-  <div class="row">
-    <div class="column">.column</div>
-    <div class="column column-50 column-offset-25">.column column-50 column-offset-25</div>
-  </div>
+        <div class="row">
+          <div class="column column-50">
+            <div class="emrs-listing-filler"></div>
+          </div>
+        </div>
 
-</div>
+        <div class="row">
+          <div class="column column-50">
+            <div class="emrs-control-tile shadowed">
+              <b>bosley:/garden</b>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="column column-50">
+            <div class="emrs-listing-filler"></div>
+          </div>
+        </div>
+
+
+
+      </main>
+
 </body>
-
+    <script type="application/javascript">
+            function showMsg(item) {
+            alert(item);
+        }
+        </script>
 </html>
+
+<!--
+
+<a target="_blank" href="https://icons8.com/icon/XeoIeQg4RjAY/root-server">Root Server</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+
+<a target="_blank" href="https://icons8.com/icon/37nb8M1MdaMd/administrative-tools">Administrative Tools</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/KzbJ2MPfACfB/networking-manager">Networking Manager</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/O5nDteWn7Wnc/hub">Hub</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/ri1FuL5v6EZ1/server">Server</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/iZ0b5wPcDNVk/stack">Stack</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/0K7Bhvyy07oC/old-computer">Old Computer</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/419/console">Terminal</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+
+<a target="_blank" href="https://icons8.com/icon/24549/brake-warning">Alert</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/wG0B9eESqAAA/user">User</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/103891/worker">Worker</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/12640/automation">Automation</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/12687/under-construction">Under Construction</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/42449/edit">Edit</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/zrlBGygFH4iF/delete">Delete</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/XkYBpG6O81ld/gear">Gear</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+<a target="_blank" href="https://icons8.com/icon/E83gJsq8uIWw/console">Console</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+
+....
+
+
+https://icons8.com/icon/set/user-interface/isometric-line
+
+https://icons8.com/icon/set/data/isometric-line
+
+https://icons8.com/icon/set/programming/isometric-line
+-->
