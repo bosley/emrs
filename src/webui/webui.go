@@ -126,7 +126,13 @@ func (c *controller) Start() error {
 		priv.GET("/settings", c.routeSettings)
 
 		priv.GET("/dev", func(c *gin.Context) {
-			c.HTML(200, "dev.html", gin.H{})
+			c.HTML(200, "dev.html", gin.H{
+				"Topic":       "Login",
+				"PostTo":      emrsUrlAuth,
+				"Prompt":      "DEV Login",
+				"Prompting":   true,
+				"PrevAttempt": false,
+			})
 		})
 	}
 	c.srv = &http.Server{
