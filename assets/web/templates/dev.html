@@ -49,6 +49,18 @@
   border-color: transparent;
 }
 
+.delete-button {
+  border-color: black;
+  background-color: transparent;
+  color: red;
+}
+
+.edit-button {
+  border-color: black;
+  background-color: transparent;
+  color: black;
+}
+
 nav {
   height: 100%;
   width: 160px;
@@ -158,12 +170,22 @@ main {
   filter: blur(0.113rem);
 }
 
+.alert-warning:hover {
+  background-color: #FCF9A2;
+}
+
+.alert-info:hover {
+  background-color: #C7FCFC;
+}
+
+.alert-error:hover {
+  background-color: #FC9292;
+}
+
 .alert-tile:hover {
   border-radius: 4px;
   box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
   border-color: rgba(223,225,229,0);
-  filter: blur(0.113rem);
-  background-color: #FFFB7B;
 }
 
 .vertical-fill-50 {
@@ -180,12 +202,9 @@ main {
 }
 
 .version-text{ 
-  position: fixed; 
-  bottom:0%;
-  opacity: 1;
   font-family: 'Roboto Slab', serif;
   text-align: center;
-  margin-left: 2rem;
+  font-size: 1rem;
 }
 
 input[type=text]:active, input[type=text]:focus {
@@ -206,6 +225,8 @@ input[type=password]:active, input[type=password]:focus {
             <div class="user-display" id="emrs_user_name">
               bosley
             </div>
+
+            <div class="version-text" id="emrs_version_indicator">EMRS VX.X.X</div>
           </div>
           <div class="info-hover-text" id="nav-hover-text" style="line-height:7rem;">
             <br>
@@ -228,17 +249,17 @@ input[type=password]:active, input[type=password]:focus {
           <div id="emrs_app_alerts"></div>
 
           <!-- DEV ALERTS -->
-          <div class="alert-tile" onmouseover="navControlTileHover('alert!')">
+          <div class="alert-tile alert-warning" onmouseover="navControlTileHover('alert!')">
             <img class="panel-tile-img float-left" src="img/icons8-error-100.png">
             Unauthorized! you don't have sufficient access
           </div>
             <p>
-          <div class="alert-tile" onmouseover="navControlTileHover('alert!')">
+          <div class="alert-tile alert-info" onmouseover="navControlTileHover('alert!')">
             <img class="panel-tile-img float-left" src="img/icons8-error-100.png">
-            Feature not yet implemented!
+            Feature not yet implemented! (info)
           </div>
             <p>
-          <div class="alert-tile" onmouseover="navControlTileHover('alert!')">
+          <div class="alert-tile alert-error" onmouseover="navControlTileHover('alert!')">
             <img class="panel-tile-img float-left" src="img/icons8-error-100.png">
             Error
           </div>
@@ -246,7 +267,6 @@ input[type=password]:active, input[type=password]:focus {
           <!-- DEV ALERTS -->
 
           <!-- Version indicator: updated by app -->
-          <div class="version-text" id="emrs_version_indicator">EMRS VX.X.X</div>
       </nav>
       <!-- /LHS Nav Bar -->
 
@@ -270,91 +290,127 @@ input[type=password]:active, input[type=password]:focus {
         -->
         <div class="dashboard-display-control">
           <div class="row">
-            <div class="column column-10">
-              <div onmouseover="dashboardControlTileHover('list assets')">
-                <img class="dashboard-display-control-img" src="img/icons8-list-100.png">
-              </div>
+            <div class="column column-20">
+                <button
+                  class="button button-black button-clear"
+                  type="submit"
+                  onclick="dashboardListAssets()">
+                   assets 
+                </button>
             </div>
-            <div class="column column-10">
-              <div onmouseover="dashboardControlTileHover('add asset')">
-                <img class="dashboard-display-control-img" src="img/icons8-add-100.png">
-              </div>
+            <div class="column column-20 column-offset-20">
+                <button
+                  class="button button-black button-clear"
+                  type="submit"
+                  onclick="dashboardListActions()">
+                   actions 
+                </button>
             </div>
-            <div class="column column-10">
-              <div onmouseover="dashboardControlTileHover('import worker')">
-                <img class="dashboard-display-control-img" src="img/icons8-import-100.png">
-              </div>
+            <div class="column column-20 column-offset-20">
+                <button
+                  class="button button-black button-clear"
+                  type="submit"
+                  onclick="dashboardListSignals()">
+                   signals
+                </button>
             </div>
-            <div class="column column-10">
-              <div onmouseover="dashboardControlTileHover('modify something')">
-                <img class="dashboard-display-control-img" src="img/icons8-workflow-100.png">
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="info-hover-text" id="dashboard-hover-text"></div>
           </div>
 
         <!-- / dashboard-display-control -->
         </div>
 
-        <div style="height:2%;"></div>
+        <div style="height:2%;">
+
+        </div>
 
         <!-- emrs-dashboard-content -->
         <!--
             The emrs control center will display all of the emrs network
             endpoints / asset cards 
         -->
-        <div class="boxed" id="emrs-dashboard-content">
-          <div class="row">
-            <div class="column column-20">
-              <div class="dashboard-tile shadowed">
-                <b>bosley:/home</b>
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="column column-20">
-              <div class="vertical-fill-50"></div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="column column-20">
-              <div class="dashboard-tile shadowed">
-                <b>bosley:/weather-station</b>
-              </div>
-            </div>
-            <div class="column column-20">
-              <div class="dashboard-tile shadowed">
-                <b>bosley:/weather-station</b>
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="column column-20">
-              <div class="vertical-fill-50"></div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="column column-20">
-              <div class="dashboard-tile shadowed">
-                <b>bosley:/garden</b>
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="column column-50">
-              <div class="vertical-fill-50"></div>
-            </div>
-          </div>
+<table>
+  <thead>
+    <tr>
+      <th>Asset</th>
+      <th>Last Contact</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>/home/garage/env-cluster</td>
+      <td>5 min ago</td>
+      <td>
+        <button
+          class="button edit-button"
+          type="submit"
+          onclick="editAsset(`UUID-000`)">
+            edit
+        </button>
+        <button
+          class="button delete-button"
+          type="submit"
+          onclick="deleteAsset(`UUID-000`)">
+            delete
+        </button>
+      </td>
+    </tr>
+    <tr>
+      <td>/home/garage/camera</td>
+      <td>now</td>
+      <td>
+        <button
+          class="button edit-button"
+          type="submit"
+          onclick="editAsset(`UUID-001`)">
+            edit
+        </button>
+        <button
+          class="button delete-button"
+          type="submit"
+          onclick="deleteAsset(`UUID-001`)">
+            delete
+        </button>
+      </td>
+    </tr>
+    <tr>
+      <td>/home/garden/fan</td>
+      <td>2 hours ago</td>
+      <td>
+        <button
+          class="button edit-button"
+          type="submit"
+          onclick="editAsset(`UUID-002`)">
+            edit
+        </button>
+        <button
+          class="button delete-button"
+          type="submit"
+          onclick="deleteAsset(`UUID-002`)">
+            delete
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
         <!-- / emrs-dashboard-content -->
         </div>
+
+    <form onsubmit="event.preventDefault(); dashboardAddItem();">
+      <fieldset>
+        <div class="row">
+          <div class="column column-50">
+            <input type="text" placeholder=". . . ." style="width:100%;" required id="emrs_new_item_name">
+          </div>
+          <div class="column column-10">
+            <button class="edit-button">ADD</button>
+          </div>
+        </div>
+      </fieldset>
+    </form>
+
+
 
       </main>
 </body>
@@ -367,6 +423,32 @@ input[type=password]:active, input[type=password]:focus {
       function dashboardControlTileHover(data) {
         $("#dashboard-hover-text").html(data)
       }
+
+      function editAsset(asset) {
+        console.log("Edit asset:", asset)
+      }
+
+      function deleteAsset(asset) {
+        console.log("Delete asset:", asset)
+      }
+
+      function dashboardListAssets() {
+        console.log("list assets")
+      }
+
+      function dashboardListActions() {
+        console.log("list actions")
+      }
+
+      function dashboardListSignals() {
+        console.log("list signals")
+      }
+
+      function dashboardAddItem() {
+        console.log("create item: ", $("#emrs_new_item_name").val())
+        $("#emrs_new_item_name").val('')
+      }
+
     </script>
 </html>
 
