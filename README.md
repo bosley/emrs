@@ -1,4 +1,4 @@
-# Environmental Monitoriing and Response System EMRS
+# Environmental Monitoring and Response System EMRS
 _(suggested pronunciation: immerse)_
 
 
