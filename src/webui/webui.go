@@ -26,6 +26,7 @@ const (
 
 	emrsUrlAppRoot       = "/app"
 	emrsUrlAppAssetMount = "/app/ui"
+	emrsUrlImgAssetMount = "/app/img"
 )
 
 /*
@@ -101,6 +102,7 @@ func (c *controller) Start() error {
 
 	gins.LoadHTMLGlob(strings.Join([]string{c.assets, "templates/*.html"}, "/"))
 	gins.Static(emrsUrlAppAssetMount, strings.Join([]string{c.assets, "ui"}, "/"))
+	gins.Static(emrsUrlImgAssetMount, strings.Join([]string{c.assets, "img"}, "/"))
 
 	gins.GET(emrsUrlSiteRoot, c.routeIndex)
 	gins.GET(emrsUrlLogout, c.routeLogout)

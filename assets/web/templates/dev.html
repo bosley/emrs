@@ -3,16 +3,16 @@
 <html lang="en">
 
 <head>
+  <title>EMRS App</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EMRS App</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+
 </head>
 
 <style>
-
 
 .boxed {
   border-style: solid;
@@ -66,7 +66,7 @@ main {
   height: 100%;
   width: 100%;
   position: fixed;
-  padding-top: 100px;
+  padding-top: 20px;
   padding-left: 200px;
 }
 
@@ -88,19 +88,44 @@ main {
   border-color: rgba(223,225,229,0);
 }
 
-.action-tile {
-  font-family: 'Roboto Slab', serif;
+.nav-tile {
   min-height: 8%;
   min-width: 100%;
   background-color: transparent;
   color: black;
   border-color: transparent;
-  height: 2.8rem;
-  line-height: 7rem;
   text-align: center;
+  padding-top: 8%;
 }
 
-.emrs-control-tile {
+.alert-tile {
+  min-height: 8%;
+  min-width: 100%;
+  background-color: transparent;
+  color: black;
+  border-color: transparent;
+  text-align: center;
+  padding-top: 8%;
+
+  font-family: 'Roboto Slab', serif;
+  font-size: 1.2rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.info-hover-text {
+  font-family: 'Roboto Slab', serif;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.panel-tile-img {
+  width: 50px;
+  height: 50px;
+}
+
+.dashboard-tile {
   min-width: 100%;
   min-height: 100%;
   line-height: 7rem;
@@ -112,29 +137,56 @@ main {
   border-width: 1px;
 }
 
-.emrs-control-tile:hover,
-.action-tile:hover {
+
+.dashboard-display-control {
+  width: 50%;
+  height: 10%;
+}
+
+.dashboard-display-control-img {
+  width: 60px;
+  height: 60px;
+}
+
+.dashboard-display-control-img:hover,
+.user-info-tile:hover,
+.dashboard-tile:hover,
+.nav-tile:hover {
   border-radius: 4px;
   box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
   border-color: rgba(223,225,229,0);
   filter: blur(0.113rem);
 }
 
-.emrs-listing-filler {
+.alert-tile:hover {
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+  filter: blur(0.113rem);
+  background-color: #FFFB7B;
+}
+
+.vertical-fill-50 {
   min-height: 20px;
   background-color: transparent;
 }
 
 .pfp {
-  border-radius: 25px;
-  background: url(paper.gif);
-  background-position: left top;
-  background-repeat: repeat;
-  padding: 20px;
-  width: 200px;
-  height: 150px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 60px;
+  height: 60px;
 }
 
+.version-text{ 
+  position: fixed; 
+  bottom:0%;
+  opacity: 1;
+  font-family: 'Roboto Slab', serif;
+  text-align: center;
+  margin-left: 2rem;
+}
 
 input[type=text]:active, input[type=text]:focus {
   border-color: black;
@@ -149,126 +201,172 @@ input[type=password]:active, input[type=password]:focus {
       <!-- LHS Nav Bar -->
       <nav>
         <!-- Nav Contents -->
-          <div class=" user-info-tile  ">
-            <img class="pfp" src="https://picsum.photos/200.jpg">
+          <div class="user-info-tile" onmouseover="navControlTileHover('user data')">
+            <img class="pfp" src="img/icons8-test-account-100.png" >
             <div class="user-display" id="emrs_user_name">
               bosley
             </div>
           </div>
-          <div class="action-tile" onclick="console.log('Dashboard')">
-              Dashboard 
+          <div class="info-hover-text" id="nav-hover-text" style="line-height:7rem;">
+            <br>
           </div>
-          <div class="action-tile" onclick="console.log('Terminal')">
-              Terminal 
+          <div class="nav-tile" onmouseover="navControlTileHover('dashboard')" >
+            <img class="panel-tile-img" src="img/icons8-menu-100.png">
           </div>
-          <div class="action-tile" onclick="console.log('Settings')">
-              Settings 
+          <div class="nav-tile" onmouseover="navControlTileHover('terminal')">
+            <img class="panel-tile-img" src="img/icons8-console-100.png">
           </div>
-          <div class="action-tile" onclick="console.log('Logout')">
-              Logout
+          <div class="nav-tile" onmouseover="navControlTileHover('settings')">
+            <img class="panel-tile-img" src="img/icons8-gear-100.png">
           </div>
+          <div class="nav-tile" onmouseover="navControlTileHover('logout')">
+            <img class="panel-tile-img" src="img/icons8-logout-100.png">
+          </div>
+
+            <p>
+          <!-- Alerts Area -->
+          <div id="emrs_app_alerts"></div>
+
+          <!-- DEV ALERTS -->
+          <div class="alert-tile" onmouseover="navControlTileHover('alert!')">
+            <img class="panel-tile-img float-left" src="img/icons8-error-100.png">
+            Unauthorized! you don't have sufficient access
+          </div>
+            <p>
+          <div class="alert-tile" onmouseover="navControlTileHover('alert!')">
+            <img class="panel-tile-img float-left" src="img/icons8-error-100.png">
+            Feature not yet implemented!
+          </div>
+            <p>
+          <div class="alert-tile" onmouseover="navControlTileHover('alert!')">
+            <img class="panel-tile-img float-left" src="img/icons8-error-100.png">
+            Error
+          </div>
+            <p>
+          <!-- DEV ALERTS -->
+
+          <!-- Version indicator: updated by app -->
+          <div class="version-text" id="emrs_version_indicator">EMRS VX.X.X</div>
       </nav>
       <!-- /LHS Nav Bar -->
 
-      <main>
-        <div class="row">
-          <div class="column column-50">
-            <div class="emrs-control-tile shadowed">
-              <b>bosley:/home</b>
+      <!-- Main is the content page that the navigation bar modifies -->
+
+      <main> 
+
+        <!--
+        <div style="height:2%;"></div>
+        -->
+        <div id="emrs-page-content"> </div> <!-- This will be what the app updates -->
+
+
+        <!-- FROM HERE TO </main> WE ARE DOING DEV CODE -->
+
+
+        <!-- dashboard-display-control -->
+        <!--
+            The emrs control center will display all of the emrs network
+            endpoints / asset cards 
+        -->
+        <div class="dashboard-display-control">
+          <div class="row">
+            <div class="column column-10">
+              <div onmouseover="dashboardControlTileHover('list assets')">
+                <img class="dashboard-display-control-img" src="img/icons8-list-100.png">
+              </div>
+            </div>
+            <div class="column column-10">
+              <div onmouseover="dashboardControlTileHover('add asset')">
+                <img class="dashboard-display-control-img" src="img/icons8-add-100.png">
+              </div>
+            </div>
+            <div class="column column-10">
+              <div onmouseover="dashboardControlTileHover('import worker')">
+                <img class="dashboard-display-control-img" src="img/icons8-import-100.png">
+              </div>
+            </div>
+            <div class="column column-10">
+              <div onmouseover="dashboardControlTileHover('modify something')">
+                <img class="dashboard-display-control-img" src="img/icons8-workflow-100.png">
+              </div>
             </div>
           </div>
-        </div>
-
-        <div class="row">
-          <div class="column column-50">
-            <div class="emrs-listing-filler"></div>
+          <div class="row">
+            <div class="info-hover-text" id="dashboard-hover-text"></div>
           </div>
+
+        <!-- / dashboard-display-control -->
         </div>
 
-        <div class="row">
-          <div class="column column-50">
-            <div class="emrs-control-tile shadowed">
-              <b>bosley:/weather-station</b>
+        <div style="height:2%;"></div>
+
+        <!-- emrs-dashboard-content -->
+        <!--
+            The emrs control center will display all of the emrs network
+            endpoints / asset cards 
+        -->
+        <div class="boxed" id="emrs-dashboard-content">
+          <div class="row">
+            <div class="column column-20">
+              <div class="dashboard-tile shadowed">
+                <b>bosley:/home</b>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="row">
-          <div class="column column-50">
-            <div class="emrs-listing-filler"></div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="column column-50">
-            <div class="emrs-control-tile shadowed">
-              <b>bosley:/garden</b>
+          <div class="row">
+            <div class="column column-20">
+              <div class="vertical-fill-50"></div>
             </div>
           </div>
-        </div>
 
-        <div class="row">
-          <div class="column column-50">
-            <div class="emrs-listing-filler"></div>
+          <div class="row">
+            <div class="column column-20">
+              <div class="dashboard-tile shadowed">
+                <b>bosley:/weather-station</b>
+              </div>
+            </div>
+            <div class="column column-20">
+              <div class="dashboard-tile shadowed">
+                <b>bosley:/weather-station</b>
+              </div>
+            </div>
           </div>
+
+          <div class="row">
+            <div class="column column-20">
+              <div class="vertical-fill-50"></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="column column-20">
+              <div class="dashboard-tile shadowed">
+                <b>bosley:/garden</b>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="column column-50">
+              <div class="vertical-fill-50"></div>
+            </div>
+          </div>
+
+        <!-- / emrs-dashboard-content -->
         </div>
-
-
 
       </main>
-
 </body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script type="application/javascript">
-            function showMsg(item) {
-            alert(item);
-        }
-        </script>
+      function navControlTileHover(data) {
+        $("#nav-hover-text").html(data)
+      }
+
+      function dashboardControlTileHover(data) {
+        $("#dashboard-hover-text").html(data)
+      }
+    </script>
 </html>
 
-<!--
-
-<a target="_blank" href="https://icons8.com/icon/XeoIeQg4RjAY/root-server">Root Server</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-
-<a target="_blank" href="https://icons8.com/icon/37nb8M1MdaMd/administrative-tools">Administrative Tools</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/KzbJ2MPfACfB/networking-manager">Networking Manager</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/O5nDteWn7Wnc/hub">Hub</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/ri1FuL5v6EZ1/server">Server</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/iZ0b5wPcDNVk/stack">Stack</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/0K7Bhvyy07oC/old-computer">Old Computer</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/419/console">Terminal</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-
-<a target="_blank" href="https://icons8.com/icon/24549/brake-warning">Alert</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/wG0B9eESqAAA/user">User</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/103891/worker">Worker</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/12640/automation">Automation</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/12687/under-construction">Under Construction</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/42449/edit">Edit</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/zrlBGygFH4iF/delete">Delete</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/XkYBpG6O81ld/gear">Gear</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-<a target="_blank" href="https://icons8.com/icon/E83gJsq8uIWw/console">Console</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
-
-....
-
-
-https://icons8.com/icon/set/user-interface/isometric-line
-
-https://icons8.com/icon/set/data/isometric-line
-
-https://icons8.com/icon/set/programming/isometric-line
--->
