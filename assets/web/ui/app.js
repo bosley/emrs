@@ -23,8 +23,9 @@ class Application {
     this.auth()
 
     $(ui_elements.get("user_display")).html(
-      this.session.user + 
-      '<span class="caret">')
+      this.session.user)
+
+    console.log(this.session.user)
 
     $(ui_elements.get("version_display")).html(
       this.session.version)
@@ -35,6 +36,8 @@ class Application {
     this.pages = new Map()
     this.pages.set(ApplicationPage.DASHBOARD, new PageDashboard(this.alerts))
     this.pages.set(ApplicationPage.TERMINAL, new PageTerminal(this.alerts))
+
+    this.content_hook = ui_elements.get("content")
 
     this.loadPage(ApplicationPage.DASHBOARD)
   }
@@ -65,6 +68,8 @@ class Application {
     location.href = "/"
   }
 
+  
+
   // Called by UI Hooks set in main.js
   // Checks the user's session to ensure that we are still
   // using an authenticated session
@@ -82,7 +87,19 @@ class Application {
 
     this.page = pageId
 
+    $(this.content_hook).html("<p>.")
+
     this.pages.get(this.page).setSelected(this.contentHook)
+  }
+
+  getPageDashboard() {
+    return this.pages.get(
+      ApplicationPage.DASHBOARD)
+  }
+
+  getPageTerminal() {
+    return this.pages.get(
+      ApplicationPage.TERMINAL)
   }
 }
 

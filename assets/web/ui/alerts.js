@@ -1,6 +1,6 @@
 const AlertLevel = Object.freeze({
   INFO: "info",
-  ERROR: "danger",
+  ERROR: "error",
   WARN: "warning",
   SUCCESS: "success",
 })
@@ -9,10 +9,11 @@ const AlertLevel = Object.freeze({
 // by the Alerts object. Once the alert has been shown for "N" cycles, the alert
 // will be removed from the screen
 class Alert {
-  constructor(level, message, max) {
+  constructor(level, message, max, img) {
     this.shown = 0
     this.max = max
-    this.value = $('<div class="container-fluid emrs_alert"><div class="alert alert-' + level + '", role="alert", id="' + this.emrsId + '"> ' + message + '</div></div>')
+    this.value = $('<div class="alert-tile emrs_alert alert-' + level + '"><img class="panel-tile-img" src="' + img + '"><br>' + message + '</div><p>')
+    console.log("new alert:", level)
   }
   shownInd() {
     this.shown += 1
@@ -38,25 +39,25 @@ class Alerts {
 
   info(message) {
     this.active.push(
-      new Alert(AlertLevel.INFO, message, 8));
+      new Alert(AlertLevel.INFO, message, 8, "img/icons8-info-100.png"));
     this.kickoff()
   }
 
   warning(message) {
     this.active.push(
-      new Alert(AlertLevel.WARN, message, 5));
+      new Alert(AlertLevel.WARN, message, 5, "img/icons8-important-100.png"));
     this.kickoff()
   }
 
   error(message) {
     this.active.push(
-      new Alert(AlertLevel.ERROR, message, 5));
+      new Alert(AlertLevel.ERROR, message, 5, "img/icons8-error-100.png"));
     this.kickoff()
   }
 
   success(message) {
     this.active.push(
-      new Alert(AlertLevel.SUCCESS, message, 10));
+      new Alert(AlertLevel.SUCCESS, message, 10, "img/icons8-done-100.png"));
     this.kickoff()
   }
 
@@ -85,7 +86,7 @@ class Alerts {
     this.cycling = true
 
     // Show the alert, indicate to the alert that we have shown it
-    for (let i = 0; i < this.active.length; i++) {
+    for (let i = this.active.length-1; i >= 0; i--) {
       $(this.target).append(this.active[i].value)
       this.active[i].shownInd()
     }

@@ -26,3 +26,5 @@ icons8-error-100.png filter=lfs diff=lfs merge=lfs -text
 icons8-remove-100.png filter=lfs diff=lfs merge=lfs -text
 icons8-statistics-100.png filter=lfs diff=lfs merge=lfs -text
 icons8-test-account-100.png filter=lfs diff=lfs merge=lfs -text
+icons8-box-important-100.png filter=lfs diff=lfs merge=lfs -text
+icons8-notification-100.png filter=lfs diff=lfs merge=lfs -text

@@ -1,21 +1,290 @@
+<!DOCTYPE html>
 
-{{ template "header" . }}
+<html lang="en">
 
-{{ template "nav" . }}
+<head>
+  <title>EMRS App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+</head>
 
-<div class="container", id="emrs_app_alerts"></div>
+<style>
 
-<div class="container">
-  <body>
-    <div class="container", id="emrs_app_content"></div>
-  </body>
-</div>
+.boxed {
+  border-style: solid;
+  border-color: black;
+  border-width: 1px;
+  padding: 10;
+}
 
-<script src="ui/pages/terminal.js"></script>
-<script src="ui/pages/dashboard.js"></script>
-<script src="ui/alerts.js"></script>
-<script src="ui/session.js"></script>
-<script src="ui/app.js"></script>
-<script src="ui/main.js"></script>
+.center-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 100vh;
+}
 
-{{ template "footer" . }}
+.shadowed {
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.button-black {
+  background-color: black;
+  border-color: black;
+}
+
+.button-black.button-clear,
+.button-black.button-outline {
+  background-color: transparent;
+  color: black;
+}
+.button-black.button-clear {
+  border-color: transparent;
+}
+
+.delete-button {
+  border-color: black;
+  background-color: transparent;
+  color: red;
+}
+
+.edit-button {
+  border-color: black;
+  background-color: transparent;
+  color: black;
+}
+
+nav {
+  overflow: hidden;
+  height: 100%;
+  width: 160px;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  overflow-x: hidden;
+  padding-top: 20px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+main {
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  padding-top: 20px;
+  padding-left: 200px;
+}
+
+.user-display {
+  font-family: 'Roboto Slab', serif;
+  text-align: center;
+  color: black;
+}
+
+.user-info-tile {
+  min-height: 100px;
+  border-style: solid;
+  border-color: black;
+  border-width: 1px;
+  padding: 10;
+
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.nav-tile {
+  min-height: 8%;
+  min-width: 100%;
+  background-color: transparent;
+  color: black;
+  border-color: transparent;
+  text-align: center;
+  padding-top: 8%;
+}
+
+.alert-tile {
+  min-height: 8%;
+  min-width: 100%;
+  background-color: transparent;
+  color: black;
+  border-color: transparent;
+  text-align: center;
+  padding-top: 8%;
+
+  font-family: 'Roboto Slab', serif;
+  font-size: 1.2rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.info-hover-text {
+  font-family: 'Roboto Slab', serif;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.panel-tile-img {
+  width: 50px;
+  height: 50px;
+}
+
+.dashboard-tile {
+  min-width: 100%;
+  min-height: 100%;
+  line-height: 7rem;
+  text-align: center;
+
+  background-color: transparent;
+  border-style: dotted;
+  border-color: black;
+  border-width: 1px;
+}
+
+.dashboard-display-control {
+  width: 50%;
+  height: 10%;
+}
+
+.dashboard-display-control-img {
+  width: 60px;
+  height: 60px;
+}
+
+.dashboard-display-control-img:hover,
+.user-info-tile:hover,
+.dashboard-tile:hover,
+.nav-tile:hover {
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+  filter: blur(0.113rem);
+}
+
+.alert-warning:hover {
+  background-color: #FCF9A2;
+}
+
+.alert-info:hover {
+  background-color: #C7FCFC;
+}
+
+.alert-error:hover {
+  background-color: #FC9292;
+}
+.alert-success:hover {
+  background-color: #BCF873;
+}
+
+.alert-tile:hover {
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.vertical-fill-50 {
+  min-height: 20px;
+  background-color: transparent;
+}
+
+.pfp {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 60px;
+  height: 60px;
+}
+
+.version-text{ 
+  font-family: 'Roboto Slab', serif;
+  text-align: center;
+  font-size: 1rem;
+}
+
+input[type=text]:active, input[type=text]:focus {
+  border-color: black;
+}
+
+input[type=password]:active, input[type=password]:focus {
+  border-color: black;
+  filter: blur(0.113rem);
+}
+</style>
+
+<body>
+      <!-- LHS Nav Bar -->
+      <nav>
+        <!-- Nav Contents -->
+          <div 
+            class="user-info-tile"
+            onclick="alertNotYetDone()"
+            onmouseover="navControlTileHover('user data')">
+            <img class="pfp" src="img/icons8-test-account-100.png" >
+            <div class="user-display" id="emrs_user_name">....</div>
+            <!-- EMRS Version info -->
+            <div class="version-text" id="emrs_version_indicator">EMRS VX.X.X</div>
+            <!-- / EMRS Version info -->
+          </div>
+          <div class="info-hover-text" id="nav-hover-text" style="line-height:7rem;">
+            <br>
+          </div>
+          <div
+            class="nav-tile"
+            onclick="loadDashboard()"
+            onmouseover="navControlTileHover('dashboard')" >
+            <img class="panel-tile-img" src="img/icons8-menu-100.png">
+          </div>
+          <div
+            class="nav-tile"
+            onclick="loadTerminal()"
+            onmouseover="navControlTileHover('terminal')">
+            <img class="panel-tile-img" src="img/icons8-console-100.png">
+          </div>
+          <div
+            class="nav-tile"
+            onclick="alertNotYetDone()"
+            onmouseover="navControlTileHover('settings')">
+            <img class="panel-tile-img" src="img/icons8-gear-100.png">
+          </div>
+          <div
+            class="nav-tile"
+            onclick="performLogout()"
+            onmouseover="navControlTileHover('logout')">
+            <img class="panel-tile-img" src="img/icons8-logout-100.png">
+          </div>
+          <p>
+          <div id="emrs_app_alerts"></div>
+      </nav>
+      <main> 
+        <div id="emrs_app_content"> </div> 
+        </div>
+      </main>
+</body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+    <script src="ui/pages/terminal.js"></script>
+    <script src="ui/pages/dashboard.js"></script>
+    <script src="ui/alerts.js"></script>
+    <script src="ui/session.js"></script>
+    <script src="ui/app.js"></script>
+    <script src="ui/main.js"></script>
+
+    <script type="application/javascript">
+      function navControlTileHover(data) {
+        $("#nav-hover-text").html(data)
+      }
+
+      function dashboardControlTileHover(data) {
+        $("#dashboard-hover-text").html(data)
+      }
+    </script>
+</html>
+
