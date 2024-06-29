@@ -17,7 +17,16 @@ import (
 )
 
 const (
-	webAssetDir = "web-static"
+	emrsUrlSiteRoot = "/"
+	emrsUrlAuth     = "/auth"
+	emrsUrlLogout   = "/logout"
+
+	emrsUrlNewUser    = "/tmp/new/user/prompt"
+	emrsUrlCreateUser = "/tmp/new/user/process"
+
+	emrsUrlAppRoot       = "/app"
+	emrsUrlAppAssetMount = "/app/ui"
+	emrsUrlImgAssetMount = "/app/img"
 )
 
 /*
@@ -26,11 +35,13 @@ Create a new Web UI
 func New(
 	appCore *core.Core,
 	address string,
+	assets string,
 	cert tls.Certificate) *controller {
 	return &controller{
 		appCore: appCore,
 		address: address,
 		tlsCert: cert,
+		assets:  assets,
 		wg:      new(sync.WaitGroup),
 	}
 }
@@ -44,6 +55,9 @@ type metricsData struct {
 }
 
 type controller struct {
+
+	// Directory of static assets
+	assets string
 
 	// Actual server information
 	address string
@@ -86,22 +100,42 @@ func (c *controller) Start() error {
 
 	gins.Use(sessions.Sessions("emrs", store))
 
-	gins.LoadHTMLGlob(strings.Join([]string{webAssetDir, "templates/*.html"}, "/"))
-	gins.Static("/js", strings.Join([]string{webAssetDir, "js"}, "/emrs/"))
+	gins.LoadHTMLGlob(strings.Join([]string{c.assets, "templates/*.html"}, "/"))
+	gins.Static(emrsUrlAppAssetMount, strings.Join([]string{c.assets, "ui"}, "/"))
+	gins.Static(emrsUrlImgAssetMount, strings.Join([]string{c.assets, "img"}, "/"))
 
-	gins.GET("/", c.routeIndex)
-	gins.GET("/login", c.routeLogin)
-	gins.GET("/logout", c.routeLogout)
-	gins.POST("/auth", c.routeAuth)
-	gins.POST("/new/user", c.routeNewUser)
-	gins.POST("/create/user", c.routeCreateUser)
+	gins.GET(emrsUrlSiteRoot, c.routeIndex)
+	gins.GET(emrsUrlLogout, c.routeLogout)
+	gins.POST(emrsUrlAuth, c.routeAuth)
 
-	priv := gins.Group("/emrs")
+	// These endpoints are only needed the very first time the server
+	// runs. Once the use has an account we don't need the endpoints.
+	// They are soft-disabled once setup is complete, but this way
+	// they stay off
+	if c.appCore.RequiresSetup() {
+		gins.GET(emrsUrlNewUser, c.routeNewUser)
+		gins.POST(emrsUrlCreateUser, c.routeCreateUser)
+	}
+
+	priv := gins.Group("/app")
 	priv.Use(c.EmrsAuth())
 	{
+		priv.GET("/", c.routeAppLaunch)
+		priv.GET("/session", c.routeSessionInfo)
+		priv.GET("/notifications", c.routeNotificationPoll)
 		priv.GET("/status", c.routeStatus)
 		priv.GET("/dashboard", c.routeDashboard)
 		priv.GET("/settings", c.routeSettings)
+
+		priv.GET("/dev", func(c *gin.Context) {
+			c.HTML(200, "dev.html", gin.H{
+				"Topic":       "Login",
+				"PostTo":      emrsUrlAuth,
+				"Prompt":      "DEV Login",
+				"Prompting":   true,
+				"PrevAttempt": false,
+			})
+		})
 	}
 	c.srv = &http.Server{
 		Addr:    c.address,

@@ -15,6 +15,7 @@ type Config struct {
 	Key       string `yaml:key`
 	Cert      string `yaml:cert`
 	Datastore string `yaml:datastore`
+	Assets    string `yaml:assets`
 }
 
 func LoadConfig(path string) (*Config, error) {

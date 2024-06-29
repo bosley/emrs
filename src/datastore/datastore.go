@@ -12,7 +12,6 @@ type InterfacePanel struct {
 }
 
 type ControlHandle interface {
-	IsNew() bool
 	Close()
 }
 

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <title>EMRS App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+
+</head>
+
+<style>
+
+.boxed {
+  border-style: solid;
+  border-color: black;
+  border-width: 1px;
+  padding: 10;
+}
+
+.center-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 100vh;
+}
+
+.shadowed {
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.button-black {
+  background-color: black;
+  border-color: black;
+}
+
+.button-black.button-clear,
+.button-black.button-outline {
+  background-color: transparent;
+  color: black;
+}
+.button-black.button-clear {
+  border-color: transparent;
+}
+
+.delete-button {
+  border-color: black;
+  background-color: transparent;
+  color: red;
+}
+
+.edit-button {
+  border-color: black;
+  background-color: transparent;
+  color: black;
+}
+
+nav {
+  height: 100%;
+  width: 160px;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  overflow-x: hidden;
+  padding-top: 20px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+main {
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  padding-top: 20px;
+  padding-left: 200px;
+}
+
+.user-display {
+  font-family: 'Roboto Slab', serif;
+  text-align: center;
+  color: black;
+}
+
+.user-info-tile {
+  min-height: 100px;
+  border-style: solid;
+  border-color: black;
+  border-width: 1px;
+  padding: 10;
+
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.nav-tile {
+  min-height: 8%;
+  min-width: 100%;
+  background-color: transparent;
+  color: black;
+  border-color: transparent;
+  text-align: center;
+  padding-top: 8%;
+}
+
+.alert-tile {
+  min-height: 8%;
+  min-width: 100%;
+  background-color: transparent;
+  color: black;
+  border-color: transparent;
+  text-align: center;
+  padding-top: 8%;
+
+  font-family: 'Roboto Slab', serif;
+  font-size: 1.2rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.info-hover-text {
+  font-family: 'Roboto Slab', serif;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.panel-tile-img {
+  width: 50px;
+  height: 50px;
+}
+
+.dashboard-tile {
+  min-width: 100%;
+  min-height: 100%;
+  line-height: 7rem;
+  text-align: center;
+
+  background-color: transparent;
+  border-style: dotted;
+  border-color: black;
+  border-width: 1px;
+}
+
+
+.dashboard-display-control {
+  width: 50%;
+  height: 10%;
+}
+
+.dashboard-display-control-img {
+  width: 60px;
+  height: 60px;
+}
+
+.dashboard-display-control-img:hover,
+.user-info-tile:hover,
+.dashboard-tile:hover,
+.nav-tile:hover {
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+  filter: blur(0.113rem);
+}
+
+.alert-warning:hover {
+  background-color: #FCF9A2;
+}
+
+.alert-info:hover {
+  background-color: #C7FCFC;
+}
+
+.alert-error:hover {
+  background-color: #FC9292;
+}
+
+.alert-tile:hover {
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.vertical-fill-50 {
+  min-height: 20px;
+  background-color: transparent;
+}
+
+.pfp {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 60px;
+  height: 60px;
+}
+
+.version-text{ 
+  font-family: 'Roboto Slab', serif;
+  text-align: center;
+  font-size: 1rem;
+}
+
+input[type=text]:active, input[type=text]:focus {
+  border-color: black;
+}
+
+input[type=password]:active, input[type=password]:focus {
+  border-color: black;
+  filter: blur(0.113rem);
+}
+</style>
+<body>
+      <!-- LHS Nav Bar -->
+      <nav>
+        <!-- Nav Contents -->
+          <div class="user-info-tile" onmouseover="navControlTileHover('user data')">
+            <img class="pfp" src="img/icons8-test-account-100.png" >
+            <div class="user-display" id="emrs_user_name">
+              bosley
+            </div>
+
+            <div class="version-text" id="emrs_version_indicator">EMRS VX.X.X</div>
+          </div>
+          <div class="info-hover-text" id="nav-hover-text" style="line-height:7rem;">
+            <br>
+          </div>
+          <div class="nav-tile" onmouseover="navControlTileHover('dashboard')" >
+            <img class="panel-tile-img" src="img/icons8-menu-100.png">
+          </div>
+          <div class="nav-tile" onmouseover="navControlTileHover('terminal')">
+            <img class="panel-tile-img" src="img/icons8-console-100.png">
+          </div>
+          <div class="nav-tile" onmouseover="navControlTileHover('settings')">
+            <img class="panel-tile-img" src="img/icons8-gear-100.png">
+          </div>
+          <div class="nav-tile" onmouseover="navControlTileHover('logout')">
+            <img class="panel-tile-img" src="img/icons8-logout-100.png">
+          </div>
+
+            <p>
+          <!-- Alerts Area -->
+          <div id="emrs_app_alerts"></div>
+
+          <!-- DEV ALERTS -->
+          <div class="alert-tile alert-warning" onmouseover="navControlTileHover('alert!')">
+            <img class="panel-tile-img float-left" src="img/icons8-error-100.png">
+            Unauthorized! you don't have sufficient access
+          </div>
+            <p>
+          <div class="alert-tile alert-info" onmouseover="navControlTileHover('alert!')">
+            <img class="panel-tile-img float-left" src="img/icons8-error-100.png">
+            Feature not yet implemented! (info)
+          </div>
+            <p>
+          <div class="alert-tile alert-error" onmouseover="navControlTileHover('alert!')">
+            <img class="panel-tile-img float-left" src="img/icons8-error-100.png">
+            Error
+          </div>
+            <p>
+          <!-- DEV ALERTS -->
+
+          <!-- Version indicator: updated by app -->
+      </nav>
+      <!-- /LHS Nav Bar -->
+
+      <!-- Main is the content page that the navigation bar modifies -->
+
+      <main> 
+
+        <!--
+        <div style="height:2%;"></div>
+        -->
+        <div id="emrs-page-content"> </div> <!-- This will be what the app updates -->
+
+
+        <!-- FROM HERE TO </main> WE ARE DOING DEV CODE -->
+
+
+        <!-- dashboard-display-control -->
+        <!--
+            The emrs control center will display all of the emrs network
+            endpoints / asset cards 
+        -->
+        <div class="dashboard-display-control">
+          <div class="row">
+            <div class="column column-20">
+                <button
+                  class="button button-black button-clear"
+                  type="submit"
+                  onclick="dashboardListAssets()">
+                   assets 
+                </button>
+            </div>
+            <div class="column column-20 column-offset-20">
+                <button
+                  class="button button-black button-clear"
+                  type="submit"
+                  onclick="dashboardListActions()">
+                   actions 
+                </button>
+            </div>
+            <div class="column column-20 column-offset-20">
+                <button
+                  class="button button-black button-clear"
+                  type="submit"
+                  onclick="dashboardListSignals()">
+                   signals
+                </button>
+            </div>
+          </div>
+
+        <!-- / dashboard-display-control -->
+        </div>
+
+        <div style="height:2%;">
+
+        </div>
+
+        <!-- emrs-dashboard-content -->
+        <!--
+            The emrs control center will display all of the emrs network
+            endpoints / asset cards 
+        -->
+<table>
+  <thead>
+    <tr>
+      <th>Asset</th>
+      <th>Last Contact</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>/home/garage/env-cluster</td>
+      <td>5 min ago</td>
+      <td>
+        <button
+          class="button edit-button"
+          type="submit"
+          onclick="editAsset(`UUID-000`)">
+            edit
+        </button>
+        <button
+          class="button delete-button"
+          type="submit"
+          onclick="deleteAsset(`UUID-000`)">
+            delete
+        </button>
+      </td>
+    </tr>
+    <tr>
+      <td>/home/garage/camera</td>
+      <td>now</td>
+      <td>
+        <button
+          class="button edit-button"
+          type="submit"
+          onclick="editAsset(`UUID-001`)">
+            edit
+        </button>
+        <button
+          class="button delete-button"
+          type="submit"
+          onclick="deleteAsset(`UUID-001`)">
+            delete
+        </button>
+      </td>
+    </tr>
+    <tr>
+      <td>/home/garden/fan</td>
+      <td>2 hours ago</td>
+      <td>
+        <button
+          class="button edit-button"
+          type="submit"
+          onclick="editAsset(`UUID-002`)">
+            edit
+        </button>
+        <button
+          class="button delete-button"
+          type="submit"
+          onclick="deleteAsset(`UUID-002`)">
+            delete
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+    <form onsubmit="event.preventDefault(); dashboardAddItem();">
+      <fieldset>
+        <div class="row">
+          <div class="column column-50">
+            <input type="text" placeholder=". . . ." style="width:100%;" required id="emrs_new_item_name">
+          </div>
+          <div class="column column-10">
+            <button class="edit-button">ADD</button>
+          </div>
+        </div>
+      </fieldset>
+    </form>
+
+
+        <!-- / emrs-dashboard-content -->
+        </div>
+
+      </main>
+</body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script type="application/javascript">
+      function navControlTileHover(data) {
+        $("#nav-hover-text").html(data)
+      }
+
+      function dashboardControlTileHover(data) {
+        $("#dashboard-hover-text").html(data)
+      }
+
+      function editAsset(asset) {
+        console.log("Edit asset:", asset)
+      }
+
+      function deleteAsset(asset) {
+        console.log("Delete asset:", asset)
+      }
+
+      function dashboardListAssets() {
+        console.log("list assets")
+      }
+
+      function dashboardListActions() {
+        console.log("list actions")
+      }
+
+      function dashboardListSignals() {
+        console.log("list signals")
+      }
+
+      function dashboardAddItem() {
+        console.log("create item: ", $("#emrs_new_item_name").val())
+        $("#emrs_new_item_name").val('')
+      }
+
+    </script>
+</html>
+

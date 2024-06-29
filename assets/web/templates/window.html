@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMRS {{ .Topic }}</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css">
+</head>
+
+<style>
+
+.boxed {
+  border-style: solid;
+  border-color: black;
+  border-width: 1px;
+  padding: 10;
+}
+
+.center-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 100vh;
+}
+
+.shadowed {
+  border-radius: 4px;
+  box-shadow: 0 1px 6px 0 rgba(32,33,36,0.28);
+  border-color: rgba(223,225,229,0);
+}
+
+.button-black {
+  background-color: black;
+  border-color: black;
+}
+
+.button-black.button-clear,
+.button-black.button-outline {
+  background-color: transparent;
+  color: black;
+}
+.button-black.button-clear {
+  border-color: transparent;
+}
+
+input[type=text]:active, input[type=text]:focus {
+  border-color: black;
+}
+
+input[type=password]:active, input[type=password]:focus {
+  border-color: black;
+  filter: blur(0.113rem);
+}
+</style>
+
+<body>
+  <div class="container center-screen">
+    <div class="row">
+      <div class="column column-50 column-offset-25 shadowed">
+{{if .Prompting }}
+        <p>
+        <h6>{{ .Prompt }}</h6>
+        <form action={{ .PostTo }} method="post">
+          <fieldset>
+            <input 
+              type="text"
+              placeholder="username"
+              name="username"
+              autocomplete="username"
+              required>
+            <input
+              type="password"
+              placeholder="password"
+              name="password"
+              autocomplete="current-password"
+              required>
+            <button class="button button-black button-clear shadowed" type="submit">
+              submit
+            </button>
+          </fieldset>
+        </form>
+  {{if .PrevAttempt }}
+        <p>
+        <b> Invalid </b> Credentials
+        <p>
+  {{end}}
+  {{if .UserExists }}
+        <p>
+        <b> Error </b> Username already taken
+        <p>
+  {{end}}
+{{else}}
+        <p>
+        <hgroup>
+          <strong>
+            <center>
+              {{ .Message }}
+            </center>
+          </strong>
+        </hgroup>
+        <p>
+        <p>
+  {{if .ShowLogin }}
+        <button class="button button-black button-clear shadowed" style="color:black" OnClick="location.href='/'">login</button>
+  {{end}}
+        <p>
+{{end}}
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
+

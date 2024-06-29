@@ -1,0 +1,8 @@
+release: false
+home: "/tmp"
+hostname: "0.0.0.0"
+port: 8080
+key: "../dev/keys/server.key"
+cert: "../dev/keys/server.crt"
+datastore: "/tmp/main.db"
+assets: "../assets/web"
