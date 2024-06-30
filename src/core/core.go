@@ -69,7 +69,7 @@ func (c *Core) Start() error {
 
 	c.kt = initReaperIntercept(
 		c.wg,
-		5*time.Second,
+		2*time.Second,
 		func() {
 			slog.Warn("Kill timer activated..")
 			c.broadcastShutdownAlert()

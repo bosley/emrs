@@ -127,6 +127,9 @@ func (c *controller) Start() error {
 		priv.GET("/dashboard", c.routeDashboard)
 		priv.GET("/settings", c.routeSettings)
 
+		priv.POST("/create", c.routeCreateItem)
+		priv.POST("/delete", c.routeDeleteItem)
+
 		priv.GET("/dev", func(c *gin.Context) {
 			c.HTML(200, "dev.html", gin.H{
 				"Topic":       "Login",

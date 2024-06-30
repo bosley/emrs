@@ -79,12 +79,9 @@ const db_table_create_users = `create table users (
 
 const db_table_create_assets = `create table assets (
   id integer not null primary key,
-  owner int,
   name text,
-  type int,
   description text,
-  UNIQUE(name),
-  FOREIGN KEY (owner) REFERENCES users(id)
+  UNIQUE(name)
 )`
 
 const db_contains_table = `select name from sqlite_master where type = 'table' and name = ?`

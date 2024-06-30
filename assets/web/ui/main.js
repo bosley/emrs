@@ -22,14 +22,12 @@ function loadTerminal() {
   app.loadPage(ApplicationPage.TERMINAL)
 }
 
-function editItem(item) {
-  console.log("Edit item:", item)
-  alertNotYetDone()
+function dashboardEditItem(item) {
+  app.getPageDashboard().editItem(item)
 }
 
-function deleteItem(item) {
-  console.log("Delete item:", item)
-  alertNotYetDone()
+function dashboardDeleteItem(item) {
+  app.getPageDashboard().deleteItem(item)
 }
 
 function dashboardListAssets() {

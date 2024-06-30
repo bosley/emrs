@@ -30,27 +30,20 @@ type UserStore interface {
 	DeleteUser(username string) bool
 }
 
-const (
-	AssetTypeRx = iota
-	AssetTypeTx
-	AssetTypeRxTx
-)
-
 type Asset struct {
 	Id          int
 	Name        string
-	Type        int
 	Description string
 }
 
 type AssetStore interface {
-	GetAsset(Id string) *Asset
+	GetAsset(name string) *Asset
 
 	GetAssets() []Asset
 
-	AddAsset(name string, assetType int, description string) error
+	AddAsset(name string, description string) error
 
-	DeleteAsset(Id string) error
+	DeleteAsset(name string) error
 }
 
 type Event struct {

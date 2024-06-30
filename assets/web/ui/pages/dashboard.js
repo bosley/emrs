@@ -4,6 +4,13 @@ const DashboardViews = Object.freeze({
   SIGNALS: "signal",
 })
 
+class PostCreate {
+  constructor(classification, name) {
+    this.classification = classification
+    this.name = name
+  }
+}
+
 class PageDashboard {
   constructor(alerts) {
     this.alerts = alerts
@@ -91,15 +98,12 @@ class PageDashboard {
     switch (view) {
       case DashboardViews.ASSETS:
         this.makeTable("Asset", "Last Contact", "")
-        tableUrl = "/app/get/assets?view=1"
         break;
       case DashboardViews.ACTIONS:
         this.makeTable("Action", "Status", "")
-        tableUrl = "/app/get/actions?view=1"
         break;
       case DashboardViews.SIGNALS:
         this.makeTable("Signal", "In-Use", "")
-        tableUrl = "/app/get/signals?view=1"
         break;
       default:
         this.alerts.error("Internal error: Invalid view name")
@@ -107,36 +111,54 @@ class PageDashboard {
     }
 
     this.view = view
-    this.populateTable(tableUrl)
+    this.populateTable()
   }
 
-  populateTable(endpoint) {
+  reload() {
+    this.changeViews(this.view)
+  }
 
-    // The provided table url should hand us back json
-    // that is a list of 3 items, one for each column
+  populateTable() {
 
-    console.log("need to get json from ", endpoint)
-
-    $("#emrs-dashboard-table-body").append(
-      `<tr>
-        <td>/home/garden/fan</td>
-        <td>2 hours ago</td>
-        <td>
-          <button
-            class="button edit-button"
-            type="submit"
-            onclick="editItem('UUID-002')">
-              edit
-          </button>
-          <button
-            class="button delete-button"
-            type="submit"
-            onclick="deleteItem('UUID-002')">
-              delete
-          </button>
-        </td>
-      </tr>`)
-
+    $.ajax({
+      type: "GET",
+      url: "/app/dashboard",
+      dataType: 'json',
+      error: ((function(obj){
+        return function(){ 
+          console.log("session not valid")
+        }
+      })(this)),
+      success: ((function(obj){
+        return function(data){
+          function addItem(item) {
+            $("#emrs-dashboard-table-body").append(
+              `<tr>
+                <td>` + item["Col1"] + `</td>
+                <td>` + item["Col2"] + `</td>
+                <td>
+                  <button
+                    class="button edit-button"
+                    type="submit"
+                    onclick="dashboardEditItem('` + item["Col1"] + `')">
+                      edit
+                  </button>
+                  <button
+                    class="button delete-button"
+                    type="submit"
+                    onclick="dashboardDeleteItem('` + item["Col1"] + `')">
+                      delete
+                  </button>
+                </td>
+              </tr>`)
+          }
+          let items = data[obj.view]
+          for (let i = 0; i < items.length; i++) {
+            addItem(items[i]) 
+          }
+        }
+      })(this))
+    })
   }
 
   createSubmissionForm() {
@@ -160,5 +182,60 @@ class PageDashboard {
     $("#emrs_dashboard_input").val('')
 
     console.log("create", item, "for", this.view)
+
+    let msg = JSON.stringify(new PostCreate(this.view, item)) 
+
+    console.log(msg)
+
+    $.ajax({
+      type: "POST",
+      url: "/app/create",
+      dataType: 'json',
+      data: msg,
+      contentType: 'application/json',
+      error: ((function(obj){
+        return function(){ 
+          obj.alerts.error("error creating:" + item)
+        }
+      })(this)),
+      success: ((function(obj){
+        return function(data){
+          obj.alerts.info(data["status"])
+          obj.reload()
+        }
+      })(this))
+    })
+  }
+
+  editItem(item) {
+
+    console.log("Dashboard::editItem(",item,")")
+  }
+
+  deleteItem(item) {
+
+    console.log("delete", item, "for", this.view)
+
+    let msg = JSON.stringify(new PostCreate(this.view, item)) 
+
+    console.log(msg)
+    $.ajax({
+      type: "POST",
+      url: "/app/delete",
+      dataType: 'json',
+      data: msg,
+      contentType: 'application/json',
+      error: ((function(obj){
+        return function(){ 
+          obj.alerts.error("error creating:" + item)
+        }
+      })(this)),
+      success: ((function(obj){
+        return function(data){
+          obj.alerts.info(data["status"])
+          obj.reload()
+        }
+      })(this))
+    })
   }
 }
