@@ -96,10 +96,33 @@ func (c *controller) DeleteAsset(name string) error {
 	return nil
 }
 
+func (c *controller) UpdateAsset(name string, desc string) error {
+
+	tx, err := c.db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(assets_update)
+	if err != nil {
+		slog.Error("Error preparing asset-update", "err", err.Error())
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(name, desc, name)
+	err = tx.Commit()
+	if err != nil {
+		slog.Error("Error tx commit", "err", err.Error())
+		return err
+	}
+	return nil
+}
+
 const assets_create = `insert into assets (id, name, description) values (NULL, ?, ?)`
 const assets_get = `select id, name, description from assets where name = ?`
 const assets_delete = `delete from assets where name = ?`
 const assets_select_all = `select id, name, description from assets where id >= 0`
+const assets_update = `update assets set name = ?, description = ? where name = ?`
 
 func (c *controller) retrieveAsset(name string) *Asset {
 

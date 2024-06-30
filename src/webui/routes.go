@@ -229,3 +229,63 @@ func (wc *controller) routeDeleteItem(c *gin.Context) {
 		"status": "record deleted",
 	})
 }
+
+func (wc *controller) routeUpdateItem(c *gin.Context) {
+
+	type pb struct {
+		Classification string `json:classification`
+		Name           string `json:name`
+	}
+
+	var post pb
+	arr, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"status": "Failed to create record",
+			"error":  err.Error(),
+		})
+		slog.Error("error adding asset", "err", err.Error())
+	}
+
+	json.Unmarshal(arr, &post)
+
+	classification := post.Classification
+	name := post.Name
+
+	slog.Debug("create item", "name", name)
+
+	if strings.Trim(classification, " ") == "" || strings.Trim(name, " ") == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameters can't be empty"})
+		slog.Error("posted parameters were empty")
+		return
+	}
+
+	if classification == "asset" {
+		slog.Debug("Add asset")
+		db := wc.appCore.GetAssetStore()
+		if err := db.UpdateAsset(name, "[FIELD NOT CURRENTLY USED]"); err != nil {
+			c.JSON(500, gin.H{
+				"status": "Failed to update record",
+				"error":  err.Error(),
+			})
+			slog.Error("error removing asset", "err", err.Error())
+			return
+		}
+	} else if classification == "action" {
+		c.JSON(503, gin.H{
+			"status": "under construction",
+		})
+	} else if classification == "signal" {
+		c.JSON(503, gin.H{
+			"status": "under construction",
+		})
+	} else {
+		c.JSON(400, gin.H{
+			"status": "unknown classification",
+		})
+	}
+	slog.Debug("record updated")
+	c.JSON(200, gin.H{
+		"status": "record updated",
+	})
+}

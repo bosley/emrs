@@ -22,11 +22,8 @@ type ServerStore interface {
 
 type UserStore interface {
 	GetAuthHash(username string) *string
-
 	AddUser(name string, password string) error
-
 	UpdatePassword(username string, password string) error
-
 	DeleteUser(username string) bool
 }
 
@@ -38,12 +35,10 @@ type Asset struct {
 
 type AssetStore interface {
 	GetAsset(name string) *Asset
-
 	GetAssets() []Asset
-
 	AddAsset(name string, description string) error
-
 	DeleteAsset(name string) error
+	UpdateAsset(name string, description string) error
 }
 
 type Event struct {

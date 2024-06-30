@@ -128,6 +128,7 @@ func (c *controller) Start() error {
 		priv.GET("/settings", c.routeSettings)
 
 		priv.POST("/create", c.routeCreateItem)
+		priv.POST("/update", c.routeUpdateItem)
 		priv.POST("/delete", c.routeDeleteItem)
 
 		priv.GET("/dev", func(c *gin.Context) {
