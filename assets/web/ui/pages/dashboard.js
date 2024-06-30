@@ -38,6 +38,14 @@ class PageDashboard {
         <div class="column column-20">
             <button
               class="button button-black button-clear"
+              id="emrs_dashboard_add_item_button"
+              type="submit"
+              onclick="dashboardAddItem()">
+            </button>
+        </div>
+        <div class="column column-20 column-offset-20">
+            <button
+              class="button button-black button-clear"
               type="submit"
               onclick="dashboardListAssets()">
                assets 
@@ -68,22 +76,29 @@ class PageDashboard {
   changeViews(view) {
     $("#dashboard-view").html("")
 
+    let buttonText = "[INVALID]"
     switch (view) {
       case DashboardViews.ASSETS:
-        this.setupContentAsset()
+        buttonText = "+ asset"
+        this.makeTable("name", "last seen", "")
         break;
       case DashboardViews.ACTIONS:
-        this.setupContentAction()
+        buttonText = "+ action"
+        this.makeTable("name", "status", "")
         break;
       case DashboardViews.SIGNALS:
-        this.setupContentSignal()
+        buttonText = "+ signal"
+        this.makeTable("name", "in-use", "")
         break;
       default:
         this.alerts.error("Internal error: Invalid view name")
         return
     }
 
+    $("#emrs_dashboard_add_item_button").html(buttonText)
+
     this.view = view
+    this.populateTable()
   }
 
   reload() {
@@ -152,181 +167,80 @@ class PageDashboard {
     `)
   }
 
-  setupContentAsset() {
-    this.makeTable("name", "last seen", "")
-    $("#dashboard-view").append(
-      `<form onsubmit="event.preventDefault(); dashboardAddItem();">
-            <fieldset>
-              <div class="row">
-                <div class="column column-50">
-                  <input type="text" style="width:100%;" required id="emrs_dashboard_input">
-                </div>
-                <div class="column column-10">
-                  <button class="edit-button">ADD</button>
-                </div>
-              </div>
-            </fieldset>
-          </form>`)
-    this.populateTable()
-  }
-
-  setupContentAction() {
-    this.makeTable("name", "status", "")
-    $("#dashboard-view").append(
-      `<form onsubmit="event.preventDefault(); dashboardAddItem();">
-            <fieldset>
-              <div class="row">
-                <div class="column column-50">
-                  <input type="text" style="width:100%;" required id="emrs_dashboard_input">
-                </div>
-                <div class="column column-10">
-                  <button class="edit-button">ADD</button>
-                </div>
-              </div>
-            </fieldset>
-          </form>`)
-    this.populateTable()
-  }
-
-  setupContentSignal() {
-    this.makeTable("name", "assigned", "")
-    $("#dashboard-view").append(
-      `<form onsubmit="event.preventDefault(); dashboardAddItem();">
-            <fieldset>
-              <div class="row">
-                <div class="column column-50">
-                  <input type="text" style="width:100%;" required id="emrs_dashboard_input">
-                </div>
-                <div class="column column-10">
-                  <button class="edit-button">ADD</button>
-                </div>
-              </div>
-            </fieldset>
-          </form>`)
-    this.populateTable()
-  }
-
-  setupEditAsset(name) {
-
-
-    /*
-        TODO:
-
-        Right now when we hit "edit" the table is wiped and a form will display
-
-        We need a map of maps in the dashboard view -> asset -> data mapping.
-
-        This way when we edit, we can just pull from memory of the currently displayed
-
-        table for autofilled fields in editing.
-
-
-        Keep in mind I want to use the same screen for adding a new item rather than having
-        some button at the bottom of the table with a single input field.
-
-        Instead, an add button at the top should bring this same screen up, but unpopulated.
-
-        Then when they submit, it will go add and the page will come back to /app to
-        display the new table
-
-      */
-
-    console.log("edit", name)
-
-
-    // TODO: Modify this to post to the update area.
-    //
-    // then modify the views to build their forms on "ADD" rather than have the form under the table
-    //
-    // depending on whertr we come from we will wan to post to different areas /create vs update/ etc
-    // so we will want to function-this-out to change post destinations
-    //
-    // then we need to change backend to get post data like it shouldve
-    //
-    // then get all 6 variations working
-    //
-    // THEN WE CAN START REAL PROGRAMMING
-    //
-    //
-    //
-    $("#dashboard-view").append(
-`
-    <div class="row">
+  setupAssetInput(item, postUrl, use_active) {
+    let body = 
+    `<div class="row">
       <div class="column column-50">
-        <form>
+        <form method="POST" action="` + postUrl + `">
           <fieldset>
-            <label for="assetName">Name</label>
-            <input type="text" placeholder="..." id="assetName">
-            <p>
-            <label for="assetDesc">Description</label>
-            <textarea placeholder=". . ." id="assetDesc"></textarea>
-            <p>
+            `
+
+    if (use_active) {
+      let description = "unknown"
+      let items = this.data_cache[this.view]
+      for (let i = 0; i < items.length; i++) {
+console.log(items[i]["Col1"], " | " , item)
+        if (items[i]["Col1"] === item) {
+          description = items[i]["Col3"]
+          i = items.length
+          console.log("found description:", description)
+        }
+      }
+      body += `
+        <input type="hidden" value="` + item + `" name="original_name" >
+        <p>
+        <label for="name">Name</label>
+        <input type="text" value="` + item + `" name="name" required>
+        <p>
+        <label for="description">Description</label>
+        <textarea value="` + description + `" name="description" required>` + description + `</textarea>
+        <p>`
+
+    } else {
+      body += `
+        <input type="text" placeholder="/garden/tomatoes/soil" name="name" required>
+        <p>
+        <label for="description">Description</label>
+        <textarea placeholder="Soil moisture sensor" name="description" required></textarea>
+        <p>`
+    }
+    body += `
             <button
               class="button button-black "
               type="submit"> ok
             </button>
           </fieldset>
-        </form>
+        </form>            <button
+              class="button button-black "
+              type="submit"
+              onclick='dashboardReset()'> back
+            </button>
       </div>
-    </div>
-`
-    )
-
-
+    </div>`
+    $("#dashboard-view").html(body)
   }
 
-  setupEditAction(name) {
+  setupActionInput(item, postUrl, use_active) {
+    console.log("setupActionInput()")
   }
 
-  setupEditSignal(name) {
-  }
- 
-  createItem() {
-    let item = $("#emrs_dashboard_input").val()
-    $("#emrs_dashboard_input").val('')
-
-    console.log("create", item, "for", this.view)
-
-    let msg = JSON.stringify(new PostCreate(this.view, item)) 
-
-    console.log(msg)
-
-    $.ajax({
-      type: "POST",
-      url: "/app/create",
-      dataType: 'json',
-      data: msg,
-      contentType: 'application/json',
-      error: ((function(obj){
-        return function(){ 
-          obj.alerts.error("error creating:" + item)
-        }
-      })(this)),
-      success: ((function(obj){
-        return function(data){
-          obj.alerts.info(data["status"])
-          obj.reload()
-        }
-      })(this))
-    })
+  setupSignalInput(item, postUrl, use_active) {
+    console.log("setupSignalInput()")
   }
 
-  editItem(item) {
+  routeModificationRequest(item, action_type) {
 
-    console.log("edit item")
-
-    $("#dashboard-view").html("")
-
+   let use_active = (action_type == "edit")
+   $("#dashboard-view").html("")
     switch (this.view) {
       case DashboardViews.ASSETS:
-        console.log("its an asset")
-        this.setupEditAsset(item)
+        this.setupAssetInput(item, "/app/" + action_type + "/asset", use_active)
         break;
       case DashboardViews.ACTIONS:
-        this.setupEditAction(item)
+        this.setupActionInput(item, "/app/" + action_type + "/action", use_active)
         break;
       case DashboardViews.SIGNALS:
-        this.setupEditSignal(item)
+        this.setupSignalInput(item, "/app/" + action_type + "/signal", use_active)
         break;
       default:
         console.log("something should be on fire...")
@@ -350,7 +264,7 @@ class PageDashboard {
       contentType: 'application/json',
       error: ((function(obj){
         return function(){ 
-          obj.alerts.error("error creating:" + item)
+          obj.alerts.error("error deleting:" + item)
         }
       })(this)),
       success: ((function(obj){

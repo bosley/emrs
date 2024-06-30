@@ -122,14 +122,14 @@ func (c *controller) Start() error {
 	{
 		priv.GET("/", c.routeAppLaunch)
 		priv.GET("/session", c.routeSessionInfo)
-		priv.GET("/notifications", c.routeNotificationPoll)
+		priv.GET("/notifications", c.routeNotificationPoll) // TODO: Request this page to get UI updates about record adds/deletes/etc
 		priv.GET("/status", c.routeStatus)
 		priv.GET("/dashboard", c.routeDashboard)
 		priv.GET("/settings", c.routeSettings)
 
-		priv.POST("/create", c.routeCreateItem)
-		priv.POST("/update", c.routeUpdateItem)
 		priv.POST("/delete", c.routeDeleteItem)
+		priv.POST("/add/asset", c.routeAddAsset)
+		priv.POST("/edit/asset", c.routeEditAsset)
 
 		priv.GET("/dev", func(c *gin.Context) {
 			c.HTML(200, "dev.html", gin.H{

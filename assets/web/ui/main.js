@@ -22,8 +22,12 @@ function loadTerminal() {
   app.loadPage(ApplicationPage.TERMINAL)
 }
 
+function dashboardAddItem() {
+  app.getPageDashboard().routeModificationRequest(null, "add")
+}
+
 function dashboardEditItem(item) {
-  app.getPageDashboard().editItem(item)
+  app.getPageDashboard().routeModificationRequest(item, "edit")
 }
 
 function dashboardDeleteItem(item) {
@@ -45,8 +49,9 @@ function dashboardListSignals() {
     DashboardViews.SIGNALS)
 }
 
-function dashboardAddItem() {
-  app.getPageDashboard().createItem()
+function dashboardReset() {
+
+  app.forceLoadPage(ApplicationPage.DASHBOARD)
 }
 
 function alertNotYetDone () {

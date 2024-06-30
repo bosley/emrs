@@ -96,7 +96,7 @@ func (c *controller) DeleteAsset(name string) error {
 	return nil
 }
 
-func (c *controller) UpdateAsset(name string, desc string) error {
+func (c *controller) UpdateAsset(original string, name string, desc string) error {
 
 	tx, err := c.db.Begin()
 	if err != nil {
@@ -109,7 +109,7 @@ func (c *controller) UpdateAsset(name string, desc string) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(name, desc, name)
+	_, err = stmt.Exec(name, desc, original)
 	err = tx.Commit()
 	if err != nil {
 		slog.Error("Error tx commit", "err", err.Error())

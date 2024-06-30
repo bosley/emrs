@@ -75,11 +75,16 @@ class Application {
   // using an authenticated session
   loadPage(pageId) {
 
-    this.auth()
-
     if (this.page === pageId) {
       return
     }
+
+    this.forceLoadPage(pageId)
+  }
+
+  forceLoadPage(pageId) {
+
+    this.auth()
 
     if (this.page != ApplicationPage.NONE) {
       this.pages.get(this.page).setIdle()

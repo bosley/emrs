@@ -38,7 +38,7 @@ type AssetStore interface {
 	GetAssets() []Asset
 	AddAsset(name string, description string) error
 	DeleteAsset(name string) error
-	UpdateAsset(name string, description string) error
+	UpdateAsset(originalName string, name string, description string) error
 }
 
 type Event struct {
