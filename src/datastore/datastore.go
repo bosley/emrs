@@ -5,10 +5,13 @@ import (
 )
 
 type InterfacePanel struct {
-	ServerDb ServerStore
-	UserDb   UserStore
-	AssetDb  AssetStore
-	Handler  ControlHandle
+	ServerDb    ServerStore
+	UserDb      UserStore
+	AssetDb     AssetStore
+	ActionDb    ActionStore
+	SignalDb    SignalStore
+	SignalMapDb SignalMapStore
+	Handler     ControlHandle
 }
 
 type ControlHandle interface {
@@ -27,12 +30,6 @@ type UserStore interface {
 	DeleteUser(username string) bool
 }
 
-type Asset struct {
-	Id          int
-	Name        string
-	Description string
-}
-
 type AssetStore interface {
 	GetAsset(name string) *Asset
 	GetAssets() []Asset
@@ -41,7 +38,57 @@ type AssetStore interface {
 	UpdateAsset(originalName string, name string, description string) error
 }
 
-type Event struct {
+type ActionStore interface {
+	GetAction(name string) *Action
+	GetActions() []Action
+	AddAction(name string, description string, execInfo string) error
+	DeleteAction(name string) error
+	UpdateAction(originalName string, name string, description string, execInfo string) error
+}
+
+type SignalStore interface {
+	GetSignal(name string) *Signal
+	GetSignals() []Signal
+	AddSignal(name string, description string, triggers string) error
+	DeleteSignal(name string) error
+	UpdateSignal(originalName string, name string, description string, triggers string) error
+}
+
+type SignalMapStore interface {
+	GetSignalMap(id int) *SignalMap
+	GetSignalMaps() []SignalMap
+	AddSignalMap(signalId int, actionId int) error
+	DeleteSignalMap(id int) error
+	UpdateSignalMap(id int, signalId int, actionId int) error
+}
+
+type Asset struct {
+	Id          int
+	Name        string
+	Description string
+}
+
+type Action struct {
+	Id            int
+	Name          string
+	Description   string
+	ExecutionInfo string
+}
+
+type Signal struct {
+	Id          int
+	Name        string
+	Description string
+	Triggers    string
+}
+
+type SignalMap struct {
+	Id       int
+	SignalId int
+	ActionId int
+}
+
+type Event struct { // TODO: Add support for dumping all events to seperate database
 	Id          int
 	Received    time.Time
 	OriginAsset int
@@ -54,9 +101,12 @@ func New(path string) (InterfacePanel, error) {
 		return InterfacePanel{}, err
 	}
 	return InterfacePanel{
-		ServerDb: c,
-		UserDb:   c,
-		AssetDb:  c,
-		Handler:  c,
+		ServerDb:    c,
+		UserDb:      c,
+		AssetDb:     c,
+		ActionDb:    c,
+		SignalDb:    c,
+		SignalMapDb: c,
+		Handler:     c,
 	}, nil
 }

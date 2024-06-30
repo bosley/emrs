@@ -123,6 +123,18 @@ func (c *Core) GetAssetStore() ds.AssetStore {
 	return c.dbip.AssetDb
 }
 
+func (c *Core) GetActionStore() ds.ActionStore {
+	return c.dbip.ActionDb
+}
+
+func (c *Core) GetSignalStore() ds.SignalStore {
+	return c.dbip.SignalDb
+}
+
+func (c *Core) GetSignalMapStore() ds.SignalMapStore {
+	return c.dbip.SignalMapDb
+}
+
 func (c *Core) RequiresSetup() bool {
 	return c.reqSetup.Load()
 }

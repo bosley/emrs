@@ -74,15 +74,13 @@ func (wc *controller) routeDashboard(c *gin.Context) {
 	}
 
 	assetDb := wc.appCore.GetAssetStore()
+	actionDb := wc.appCore.GetActionStore()
+	signalDb := wc.appCore.GetSignalStore()
 
 	response := Response{
 		Assets:  make([]TableEntry, 0),
 		Actions: make([]TableEntry, 0),
 		Signals: make([]TableEntry, 0),
-	}
-
-	if assetDb == nil {
-		panic("WJY")
 	}
 
 	stored_assets := assetDb.GetAssets()
@@ -93,13 +91,36 @@ func (wc *controller) routeDashboard(c *gin.Context) {
 			response.Assets,
 			TableEntry{
 				Col1: asset.Name,
-				Col2: "[under construction]",
-				Col3: asset.Description,
+				Col2: asset.Description,
+				Col3: "",
 			})
 	}
 
-	// TODO: Return actions and signals once their database stuff
-	//        is setup
+	stored_actions := actionDb.GetActions()
+
+	for _, action := range stored_actions {
+		slog.Debug("Adding", "name", action.Name)
+		response.Actions = append(
+			response.Actions,
+			TableEntry{
+				Col1: action.Name,
+				Col2: action.Description,
+				Col3: action.ExecutionInfo,
+			})
+	}
+
+	stored_signals := signalDb.GetSignals()
+
+	for _, signal := range stored_signals {
+		slog.Debug("Adding", "name", signal.Name)
+		response.Signals = append(
+			response.Signals,
+			TableEntry{
+				Col1: signal.Name,
+				Col2: signal.Description,
+				Col3: signal.Triggers,
+			})
+	}
 
 	c.JSON(200, gin.H{
 		"asset":  response.Assets, // Note: The key matches the UI's dashboard view names in dashboard.js
@@ -136,16 +157,15 @@ func (wc *controller) routeDeleteItem(c *gin.Context) {
 	classification := post.Classification
 	name := post.Name
 
-	slog.Debug("create item", "name", name)
+	slog.Debug("delete item", "name", name)
 
 	if strings.Trim(classification, " ") == "" || strings.Trim(name, " ") == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Parameters can't be empty"})
 		slog.Error("posted parameters were empty")
 		return
 	}
-
 	if classification == "asset" {
-		slog.Debug("Add asset")
+		slog.Debug("Delete asset")
 		db := wc.appCore.GetAssetStore()
 		if err := db.DeleteAsset(name); err != nil {
 			c.JSON(500, gin.H{
@@ -156,17 +176,30 @@ func (wc *controller) routeDeleteItem(c *gin.Context) {
 			return
 		}
 	} else if classification == "action" {
-		c.JSON(503, gin.H{
-			"status": "under construction",
-		})
+		db := wc.appCore.GetActionStore()
+		if err := db.DeleteAction(name); err != nil {
+			c.JSON(500, gin.H{
+				"status": "Failed to delete record",
+				"error":  err.Error(),
+			})
+			slog.Error("error removing action", "err", err.Error())
+			return
+		}
 	} else if classification == "signal" {
-		c.JSON(503, gin.H{
-			"status": "under construction",
-		})
+		db := wc.appCore.GetSignalStore()
+		if err := db.DeleteSignal(name); err != nil {
+			c.JSON(500, gin.H{
+				"status": "Failed to delete record",
+				"error":  err.Error(),
+			})
+			slog.Error("error removing signal", "err", err.Error())
+			return
+		}
 	} else {
 		c.JSON(400, gin.H{
 			"status": "unknown classification",
 		})
+		return
 	}
 	slog.Debug("record deleted")
 	c.JSON(200, gin.H{
@@ -233,6 +266,118 @@ func (wc *controller) routeEditAsset(c *gin.Context) {
 
 	if err := db.UpdateAsset(params["original_name"], params["name"], params["description"]); err != nil {
 		slog.Error("Error editing asset", "err", err.Error())
+		c.JSON(500, gin.H{
+			"status": "Failed to update record",
+			"error":  err.Error(),
+		})
+		return
+	}
+	slog.Debug("record edited")
+	c.Redirect(http.StatusFound, emrsUrlAppRoot)
+}
+
+func (wc *controller) routeAddAction(c *gin.Context) {
+
+	slog.Debug("request to add action")
+
+	params, err := wc.getPostData(c, []string{
+		"name",
+		"description",
+		"execution_info",
+	})
+
+	if err != nil {
+		return // Error response set in getPostData
+	}
+
+	db := wc.appCore.GetActionStore()
+
+	if err := db.AddAction(params["name"], params["description"], params["execution_info"]); err != nil {
+		slog.Error("Error creating action", "err", err.Error())
+		c.JSON(500, gin.H{
+			"status": "Failed to update record",
+			"error":  err.Error(),
+		})
+		c.Abort()
+		return
+	}
+	slog.Debug("record created")
+	c.Redirect(http.StatusFound, emrsUrlAppRoot)
+}
+
+func (wc *controller) routeEditAction(c *gin.Context) {
+
+	params, err := wc.getPostData(c, []string{
+		"name",
+		"original_name",
+		"description",
+		"execution_info",
+	})
+
+	if err != nil {
+		return // Error response set in getPostData
+	}
+
+	db := wc.appCore.GetActionStore()
+
+	if err := db.UpdateAction(params["original_name"], params["name"], params["description"], params["execution_info"]); err != nil {
+		slog.Error("Error editing action", "err", err.Error())
+		c.JSON(500, gin.H{
+			"status": "Failed to update record",
+			"error":  err.Error(),
+		})
+		return
+	}
+	slog.Debug("record edited")
+	c.Redirect(http.StatusFound, emrsUrlAppRoot)
+}
+
+func (wc *controller) routeAddSignal(c *gin.Context) {
+
+	slog.Debug("request to add action")
+
+	params, err := wc.getPostData(c, []string{
+		"name",
+		"description",
+		"triggers",
+	})
+
+	if err != nil {
+		return // Error response set in getPostData
+	}
+
+	db := wc.appCore.GetSignalStore()
+
+	if err := db.AddSignal(params["name"], params["description"], params["triggers"]); err != nil {
+		slog.Error("Error creating action", "err", err.Error())
+		c.JSON(500, gin.H{
+			"status": "Failed to update record",
+			"error":  err.Error(),
+		})
+		c.Abort()
+		return
+	}
+	slog.Debug("record created")
+	c.Redirect(http.StatusFound, emrsUrlAppRoot)
+}
+
+func (wc *controller) routeEditSignal(c *gin.Context) {
+
+	params, err := wc.getPostData(c, []string{
+		"name",
+		"original_name",
+		"description",
+		"triggers",
+	})
+
+	if err != nil {
+		return // Error response set in getPostData
+	}
+
+	db := wc.appCore.GetSignalStore()
+
+	if err := db.UpdateSignal(params["original_name"], params["name"], params["description"], params["triggers"]); err != nil {
+		slog.Error("Error editing action", "err", err.Error())
 		c.JSON(500, gin.H{
 			"status": "Failed to update record",
 			"error":  err.Error(),

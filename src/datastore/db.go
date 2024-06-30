@@ -84,6 +84,28 @@ const db_table_create_assets = `create table assets (
   UNIQUE(name)
 )`
 
+const db_table_create_actions = `create table actions (
+  id integer not null primary key,
+  name text,
+  description text,
+  executionInfo text,
+  UNIQUE(name)
+)`
+
+const db_table_create_signals = `create table signals (
+  id integer not null primary key,
+  name text,
+  description text,
+  triggers text,
+  UNIQUE(name)
+)`
+
+const db_table_create_signal_map = `create table signalmaps (
+  id integer not null primary key,
+  signalId integer not null REFERENCES signals(id),
+  actionId integer not null REFERENCES actions(id)
+)`
+
 const db_contains_table = `select name from sqlite_master where type = 'table' and name = ?`
 
 const server_get_id = `select data from identity where id = 0`
@@ -115,8 +137,10 @@ func newController(path string) (*controller, error) {
 		tcs{"identity", db_table_create_identity},
 		tcs{"users", db_table_create_users},
 		tcs{"assets", db_table_create_assets},
+		tcs{"actions", db_table_create_actions},
+		tcs{"signals", db_table_create_signals},
+		tcs{"signalmaps", db_table_create_signal_map},
 	} {
-
 		if err := db_ensure_table_exists(c.db, table.name, table.stmt); err != nil {
 			slog.Error("error setting up table", "name", table.name)
 			c.db.Close()

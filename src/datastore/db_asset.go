@@ -129,7 +129,7 @@ func (c *controller) retrieveAsset(name string) *Asset {
 	stmt, err := c.db.Prepare(assets_get)
 
 	if err != nil {
-		slog.Error("Error retreiving user", "user", name, "err", err.Error())
+		slog.Error("Error retreiving asset", "asset", name, "err", err.Error())
 		return nil
 	}
 	defer stmt.Close()

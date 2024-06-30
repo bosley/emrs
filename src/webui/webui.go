@@ -131,6 +131,12 @@ func (c *controller) Start() error {
 		priv.POST("/add/asset", c.routeAddAsset)
 		priv.POST("/edit/asset", c.routeEditAsset)
 
+		priv.POST("/add/action", c.routeAddAction)
+		priv.POST("/edit/action", c.routeEditAction)
+
+		priv.POST("/add/signal", c.routeAddSignal)
+		priv.POST("/edit/signal", c.routeEditSignal)
+
 		priv.GET("/dev", func(c *gin.Context) {
 			c.HTML(200, "dev.html", gin.H{
 				"Topic":       "Login",
