@@ -34,6 +34,7 @@ type Core struct {
 	relMode    bool
 	dbip       ds.InterfacePanel
 	reqSetup   atomic.Bool
+	sessions   *sessionManager
 
 	kt trigger
 }
@@ -50,6 +51,7 @@ func New(info BuildInfo, dbip ds.InterfacePanel) *Core {
 		wg:         new(sync.WaitGroup),
 		relMode:    info.Release,
 		dbip:       dbip,
+		sessions:   newSessionManager(),
 	}
 	c.setup()
 	return c
@@ -157,4 +159,26 @@ func (c *Core) GetVersion() string {
 		c.build.Minor,
 		c.build.Patch,
 		releaseStr)
+}
+
+func (c *Core) NewSession(name string, data SessionData) error {
+	if err := c.sessions.newSession(
+		name,
+		data); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Core) DeleteSession(name string) {
+	c.sessions.deleteSession(name)
+	return
+}
+
+func (c *Core) GetSession(name string) *SessionData {
+	return c.sessions.getSessionData(name)
+}
+
+func (c *Core) UpdateSession(name string, data *SessionData) error {
+	return c.sessions.updateSession(name, *data)
 }

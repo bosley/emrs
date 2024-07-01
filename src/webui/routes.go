@@ -2,8 +2,6 @@ package webui
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"log/slog"
@@ -205,21 +203,6 @@ func (wc *controller) routeDeleteItem(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"status": "record deleted",
 	})
-}
-
-func (wc *controller) getPostData(c *gin.Context, params []string) (map[string]string, error) {
-	result := make(map[string]string)
-	for _, param := range params {
-		target := c.PostForm(param)
-		if strings.Trim(target, " ") == "" {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": fmt.Sprintf("Parameter '%s' can not be empty", param),
-			})
-			return result, errors.New("empty parameter")
-		}
-		result[param] = target
-	}
-	return result, nil
 }
 
 func (wc *controller) routeAddAsset(c *gin.Context) {

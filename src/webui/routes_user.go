@@ -2,6 +2,7 @@ package webui
 
 import (
 	"emrs/badger"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -207,7 +208,7 @@ func (wc *controller) routeNewUser(c *gin.Context) {
 	})
 }
 
-func (wc *controller) routeSessionInfo(c *gin.Context) {
+func (wc *controller) routeSessionGet(c *gin.Context) {
 	userInfo := getLoggedInUser(c)
 	if userInfo == nil {
 		c.JSON(500, gin.H{
@@ -230,5 +231,43 @@ func (wc *controller) routeSessionInfo(c *gin.Context) {
 		"session": badge.Id(),
 		"user":    badge.Nickname(),
 		"version": wc.appCore.GetVersion(),
+	})
+}
+
+func (wc *controller) routeSessionPost(c *gin.Context) {
+
+	params, err := wc.getPostData(c, []string{
+		"session_id",
+		"identity",
+		"active_path",
+	})
+
+	if err != nil {
+		return // response handled by getPostData
+	}
+
+	sessionData := wc.appCore.GetSession(
+		params["session_id"])
+
+	if sessionData == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("Invalid session identifier", params["session_id"]),
+		})
+		return
+	}
+
+	sessionData.Identity = params["identity"]
+	sessionData.AppActivePath = params["active_path"]
+
+	if err = wc.appCore.UpdateSession(
+		params["session_id"], sessionData); err != nil {
+		c.JSON(500, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"status": "record updated",
 	})
 }

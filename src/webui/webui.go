@@ -121,7 +121,8 @@ func (c *controller) Start() error {
 	priv.Use(c.EmrsAuth())
 	{
 		priv.GET("/", c.routeAppLaunch)
-		priv.GET("/session", c.routeSessionInfo)
+		priv.GET("/session", c.routeSessionGet)
+		priv.POST("/session", c.routeSessionPost)
 		priv.GET("/notifications", c.routeNotificationPoll) // TODO: Request this page to get UI updates about record adds/deletes/etc
 		priv.GET("/status", c.routeStatus)
 		priv.GET("/dashboard", c.routeDashboard)
