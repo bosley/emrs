@@ -5,37 +5,27 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
-	"path/filepath"
 )
 
 type Config struct {
-	Home      string `yaml:home`
-	Hostname  string `yaml:hostname`
+	Mode      string `yaml:mode`
+	Hostname  string `yaml:home`
 	Port      int    `yaml:port`
 	Key       string `yaml:key`
 	Cert      string `yaml:cert`
 	Datastore string `yaml:datastore`
-	Assets    string `yaml:assets`
 }
 
-func LoadConfig(path string) (*Config, error) {
-
+func MustLoadConfig(path string) Config {
 	f, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		panic(err.Error())
 	}
-
-	var sc Config
-	if err := yaml.Unmarshal(f, &sc); err != nil {
-		return nil, err
+	var c Config
+	if err := yaml.Unmarshal(f, &c); err != nil {
+		panic(err.Error())
 	}
-	return &sc, nil
-}
-
-func (c *Config) GetDabasePath() string {
-	return filepath.Join(
-		c.Home,
-		c.Datastore)
+	return c
 }
 
 func (c *Config) GetAddress() string {
@@ -44,4 +34,11 @@ func (c *Config) GetAddress() string {
 
 func (c *Config) LoadTlsCert() (tls.Certificate, error) {
 	return tls.LoadX509KeyPair(c.Cert, c.Key)
+}
+
+// --
+
+func main() {
+
+	fmt.Println("yo")
 }
