@@ -68,13 +68,13 @@ func must(err error) {
 }
 
 type Iter[V any] struct {
-  Idx   int
-  Value V
+	Idx   int
+	Value V
 }
 
 func iterate[V any](list []V, fn func(it Iter[V]) error) error {
 	for i, v := range list {
-    if err := fn(Iter[V]{ Idx: i, Value: v}); err != nil {
+		if err := fn(Iter[V]{Idx: i, Value: v}); err != nil {
 			return err
 		}
 	}
