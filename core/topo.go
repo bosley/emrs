@@ -53,6 +53,15 @@ type NetworkMap struct {
 	sigmap  map[string]*Action
 }
 
+func BlankTopo() Topo {
+	return Topo{
+		Sectors: make([]*Sector,0),
+		Signals: make([]*Signal,0),
+		Actions: make([]*Action,0),
+		SigMap:  make(map[string]string),
+	}
+}
+
 func BlankNetworkMap() *NetworkMap {
 	return &NetworkMap{
 		sectors: make(map[string]*Sector),
@@ -170,7 +179,7 @@ func (nm *NetworkMap) AddAsset(sectorName string, asset *Asset) error {
 }
 
 func (nm *NetworkMap) AddAction(action *Action) error {
-	if mapContains(nm.signals, action.Header.Name) {
+	if mapContains(nm.actions, action.Header.Name) {
 		return NErr("Duplicate action name").
 			Push(fmt.Sprintf("Action name (%s) is not unique", action.Header.Name))
 	}
@@ -227,10 +236,11 @@ func (nm *NetworkMap) DeleteAsset(sector string, asset string) {
 		return a.Header.Name == asset
 	})
 
-	name := makeAssetFullName(sector, asset)
-	if !nm.ContainsAsset(sector, name) {
+	if !nm.ContainsAsset(sector, asset) {
 		return
 	}
+
+	name := makeAssetFullName(sector, asset)
 	delete(nm.assets, name)
 
 	sig := makeAssetOnEventSignal(name)
@@ -249,4 +259,33 @@ func (nm *NetworkMap) DeleteSignal(signal string) {
 		return
 	}
 	delete(nm.signals, signal)
+}
+/*
+type Topo struct {
+	Sectors []*Sector         `json:sectors`
+	Signals []*Signal         `json:signals`
+	Actions []*Action         `json:actions`
+	SigMap  map[string]string `json:signal_map`
+}
+
+type NetworkMap struct {
+	sectors map[string]*Sector
+	assets  map[string]*Asset
+	actions map[string]*Action
+	signals map[string]*Signal
+	sigmap  map[string]*Action
+}
+*/
+func (nm *NetworkMap) ToTopo() Topo {
+  topo := BlankTopo()
+  itermap[string, *Sector](nm.sectors, func(name string, value *Sector) {
+    topo.Sectors = append(topo.Sectors, value)
+  })
+  itermap[string, *Action](nm.actions, func(name string, value *Action) {
+    topo.Actions = append(topo.Actions, value)
+  })
+  itermap[string, *Signal](nm.signals, func(name string, value *Signal) {
+    topo.Signals = append(topo.Signals, value)
+  })
+  return topo
 }

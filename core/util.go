@@ -95,6 +95,12 @@ func iterate[V any](list []V, fn func(it Iter[V]) error) error {
 	return nil
 }
 
+func itermap[K comparable, V any](m map[K]V, fn func (K, V)) {
+  for k, v := range m {
+    fn(k, v)
+  }
+}
+
 func forEach[V any](list []V, fn func(i int, x V) error) error {
 	for i, v := range list {
 		if err := fn(i, v); err != nil {
