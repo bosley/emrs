@@ -95,10 +95,10 @@ func iterate[V any](list []V, fn func(it Iter[V]) error) error {
 	return nil
 }
 
-func itermap[K comparable, V any](m map[K]V, fn func (K, V)) {
-  for k, v := range m {
-    fn(k, v)
-  }
+func itermap[K comparable, V any](m map[K]V, fn func(K, V)) {
+	for k, v := range m {
+		fn(k, v)
+	}
 }
 
 func forEach[V any](list []V, fn func(i int, x V) error) error {
@@ -117,6 +117,16 @@ func contains[V any](in []V, lookFor V, isSame func(i int, l V, r V) bool) bool 
 		}
 	}
 	return false
+}
+
+func isIn[V comparable](in []V, x V) bool {
+	if len(in) == 0 {
+		return false
+	}
+	if in[0] == x {
+		return true
+	}
+	return isIn(in[1:], x)
 }
 
 func isUnique[V any](target []V, isSame func(i int, l V, r V) bool) bool {
