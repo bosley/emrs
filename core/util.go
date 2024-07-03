@@ -61,6 +61,20 @@ func (s *Stack[V]) Pop() (V, error) {
 
 // --
 
+func deleteIf[V any](s []V, check func(V) bool) []V {
+	for i := 0; i < len(s); i++ {
+		if check(s[i]) {
+			return append(s[:i], s[i+1:]...)
+		}
+	}
+	return s
+}
+
+func mapContains[K comparable, V any](m map[K]V, k K) bool {
+	_, o := m[k]
+	return o
+}
+
 func must(err error) {
 	if err != nil {
 		panic(err.Error())

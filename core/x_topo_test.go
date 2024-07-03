@@ -54,21 +54,21 @@ func randHeader() HeaderData {
 	}
 }
 
-func randAsset() Asset {
-	return Asset{
+func randAsset() *Asset {
+	return &Asset{
 		Header: randHeader(),
 	}
 }
 
-func randAction() Action {
-	return Action{
+func randAction() *Action {
+	return &Action{
 		Header:        randHeader(),
 		ExecutionData: make([]byte, 0),
 	}
 }
 
-func randSignal() Signal {
-	return Signal{
+func randSignal() *Signal {
+	return &Signal{
 		Header: randHeader(),
 		Trigger: randSel[string]([]string{
 			TriggerOnEvent,
@@ -81,32 +81,24 @@ func randSignal() Signal {
 	}
 }
 
-// This grows expon. be careful with nSubSectors
-func randSector(nSubSectors int) Sector {
-	subs := make([]Sector, 0)
-	if nSubSectors > 0 {
-		subs = generateList[Sector](nSubSectors, func(i int) Sector {
-			return randSector(nSubSectors - 1)
-		})
-	}
-	return Sector{
-		Header:  randHeader(),
-		Assets:  generateList[Asset](4, func(i int) Asset { return randAsset() }),
-		Sectors: subs,
+func randSector() *Sector {
+	return &Sector{
+		Header: randHeader(),
+		Assets: generateList[*Asset](4, func(i int) *Asset { return randAsset() }),
 	}
 }
 
-func randTopoMap(nSectors int, nSubSectors int, nSignals int, nActions int, nMapped int) Topo {
+func randTopoMap(nSectors int, nSignals int, nActions int, nMapped int) Topo {
 
-	sectors := generateList[Sector](nSectors, func(idx int) Sector {
-		return randSector(nSubSectors)
+	sectors := generateList[*Sector](nSectors, func(idx int) *Sector {
+		return randSector()
 	})
 
-	signals := generateList[Signal](nSignals, func(idx int) Signal {
+	signals := generateList[*Signal](nSignals, func(idx int) *Signal {
 		return randSignal()
 	})
 
-	actions := generateList[Action](nActions, func(idx int) Action {
+	actions := generateList[*Action](nActions, func(idx int) *Action {
 		return randAction()
 	})
 
@@ -123,17 +115,17 @@ func randTopoMap(nSectors int, nSubSectors int, nSignals int, nActions int, nMap
 }
 
 func randTopoSmall() Topo {
-	return randTopoMap(1, 0, 2, 1, 0)
+	return randTopoMap(1, 2, 1, 0)
 }
 
 func randTopoLarge() Topo {
-	return randTopoMap(10, 5, 100, 244, 50)
+	return randTopoMap(10, 100, 244, 50)
 }
 
 func randTopoDuplicateSectorNames() Topo {
-	s := randSector(0)
+	s := randSector()
 	r := randTopoLarge()
-	iterate(r.Sectors, func(it Iter[Sector]) error {
+	iterate(r.Sectors, func(it Iter[*Sector]) error {
 		r.Sectors[it.Idx] = s
 		return nil
 	})
@@ -167,6 +159,42 @@ func TestCoreBadTopoSector(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error for duplicate sector names")
 	}
+}
+
+func TestCoreNetworkMap(t *testing.T) {
+
+	assert := func(msg string, cond bool) {
+		if !cond {
+			t.Fatalf("test failure: %s", msg)
+		}
+	}
+
+	nm := BlankNetworkMap()
+
+	assert("nil map", nm != nil)
+
+	s := randSector()
+
+	assert("failed to add sector", nm.AddSector(s) == nil)
+
+	for i := 0; i < 10; i++ {
+		a := randAsset()
+		assert("failed to add asset", nm.AddAsset(s.Header.Name, a) == nil)
+		assetfull := makeAssetFullName(s.Header.Name, a.Header.Name)
+		sig := makeAssetOnEventSignal(assetfull)
+		_, ok := nm.signals[sig.Header.Name]
+		assert("(onEvent) not generated for new asset", ok)
+	}
+
+	xasset := randAsset()
+	xassetfull := makeAssetFullName(s.Header.Name, xasset.Header.Name)
+	xsig := makeAssetOnEventSignal(xassetfull)
+
+	assert("failed to add asset", nm.AddAsset(s.Header.Name, xasset) == nil)
+	assert("added dup asset", nm.AddAsset(s.Header.Name, xasset) != nil)
+
+	_, ok := nm.signals[xsig.Header.Name]
+	assert("(onEvent) not generated for new asset", ok)
 }
 
 /*
