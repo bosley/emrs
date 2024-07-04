@@ -1,6 +1,8 @@
 package core
 
 import (
+	"encoding/json"
+	"os"
 	"sync"
 )
 
@@ -60,6 +62,15 @@ func (s *Stack[V]) Pop() (V, error) {
 }
 
 // --
+
+func LoadJSON[T any](filename string) (T, error) {
+	var data T
+	fileData, err := os.ReadFile(filename)
+	if err != nil {
+		return data, err
+	}
+	return data, json.Unmarshal(fileData, &data)
+}
 
 func deleteIf[V any](s []V, check func(V) bool) []V {
 	for i := 0; i < len(s); i++ {
