@@ -212,7 +212,7 @@ func (id *identity) EncodeIdentityString() string {
 	}
 
 	b, _ := json.Marshal(eid)
-	return string(b)
+	return b64.StdEncoding.EncodeToString(b)
 }
 
 func DecodeIdentity(eid EncodedIdentity) (Badge, error) {
@@ -236,9 +236,13 @@ func DecodeIdentity(eid EncodedIdentity) (Badge, error) {
 
 func DecodeIdentityString(encodedId string) (Badge, error) {
 
-	did := EncodedIdentity{}
+	eid, err := b64.StdEncoding.DecodeString(encodedId)
+	if err != nil {
+		return nil, err
+	}
 
-	if err := json.Unmarshal([]byte(encodedId), &did); err != nil {
+	did := EncodedIdentity{}
+	if err := json.Unmarshal([]byte(eid), &did); err != nil {
 		return nil, err
 	}
 
