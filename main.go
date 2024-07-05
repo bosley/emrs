@@ -1,10 +1,13 @@
 package main
 
 import (
+	"crypto/tls"
 	"emrs/core"
 	"errors"
 	"flag"
+	"github.com/gin-gonic/gin"
 	"log/slog"
+	"net/http"
 	"os"
 )
 
@@ -53,9 +56,57 @@ func main() {
 
 	appCore.AddSnapshotReceiver(networkMapUpdateLogger)
 
-	// TODO: Start the API server(s) and
-	//       finish initializing the core
+	/*
+	   TODO:
 
+
+	   Create a gin server in a public module called API eAPI or something
+	   this will be what people can use to write go programs to interface with
+	   the server.
+
+	   UI Should have port and stuff removed from config. The only web thing
+	   emrs should be supporting a the moment is the api and the event endpoints.
+
+	   UI can be added later, utilizing the /api endpoint to configure/ edit the server
+	   I might make the UI an entirely different app/repo
+
+	   Public Group
+	       /event    POST    Post an event to the server - Later add config to make voucher locked
+	       /api
+	         Middleware will grab and authenticate API vouchers for
+	         every request
+
+	         All requests are POSTS of JSON commands. Each cmmand will have the API token
+	         and specific subcommands for querying/setting data
+
+
+	*/
+	gins := gin.New()
+
+	gins.POST("/api", appCore.Api)
+
+	cert, err := cfg.LoadTLSCert()
+
+	if err != nil {
+		slog.Error("Failed to load TLS Cert",
+			"key", cfg.Hosting.Key,
+			"crt", cfg.Hosting.Cert)
+		os.Exit(1)
+	}
+
+	api := http.Server{
+		Addr:    cfg.Hosting.ApiAddress,
+		Handler: gins,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		},
+	}
+
+	err = api.ListenAndServeTLS("", "")
+	if err != nil && err != http.ErrServerClosed {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
 }
 
 func networkMapUpdateLogger(nmap *core.NetworkSnapshot) {

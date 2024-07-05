@@ -13,11 +13,9 @@ type RuntimeInfo struct {
 }
 
 type HostingInfo struct {
-	WebUiAddress  string `json:ui_address`
-	EventsAddress string `json:events_address`
-
-	Key  string `json:https_key`
-	Cert string `json:https_cert`
+	ApiAddress string `json:api_address`
+	Key        string `json:https_key`
+	Cert       string `json:https_cert`
 }
 
 type Config struct {
@@ -26,7 +24,7 @@ type Config struct {
 	EmrsCore core.Config `json:core` // Consider having this be a byte array, and b64 encoding the identity before saving/ decoding before handing to core
 }
 
-func (c *Config) LoadTlsCert() (tls.Certificate, error) {
+func (c *Config) LoadTLSCert() (tls.Certificate, error) {
 	return tls.LoadX509KeyPair(c.Hosting.Cert, c.Hosting.Key)
 }
 
@@ -51,10 +49,9 @@ func CreateConfigTemplate() *Config {
 			Mode: "debug",
 		},
 		Hosting: HostingInfo{
-			WebUiAddress:  "localhost:8080",
-			EventsAddress: "localhost:20000",
-			Key:           "/path/to/server.key",
-			Cert:          "/path/to/server.cert",
+			ApiAddress: "localhost:20000",
+			Key:        "./dev/keys/server.key",
+			Cert:       "./dev/keys/server.crt",
 		},
 		EmrsCore: core.Config{
 			Identity: badge.EncodeIdentityString(),

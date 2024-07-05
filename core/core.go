@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"emrs/badger"
 	"errors"
 	"log/slog"
@@ -36,12 +37,14 @@ type NetworkSnapshot struct {
 	SignalMap map[string][]*Action
 }
 
-type SnapshotReceiver func(*NetworkSnapshot)
-
 type Event struct {
 	Origin string `json:asset_origin`
 	Data   string `json:data`
 }
+
+type EventReceiver func(Event)
+
+type SnapshotReceiver func(*NetworkSnapshot)
 
 // Core EMRS object that maintains network configuration state,
 // the pub/sub event bus and other internal workings
@@ -54,16 +57,22 @@ type Core struct {
 
 	updating atomic.Bool
 
-	onEventMap map[string](chan Event)
+	actionChannels map[string](chan Event)
+
+	ctx        context.Context
+	procCancel context.CancelFunc
+	procWg     *sync.WaitGroup
 
 	metrics Metrics
 }
 
 type Metrics struct {
-	Created           time.Time     `json:time_created`
-	SubmissionAttempt atomic.Uint64 `json:n_submission_attempt`
-	SubmissionFailure atomic.Uint64 `json:n_submission_failure`
-	SubmissionSuccess atomic.Uint64 `json:n_submission_success`
+	Created            time.Time     `json:time_created`
+	SubmissionAttempt  atomic.Uint64 `json:n_submission_attempt`
+	SubmissionFailure  atomic.Uint64 `json:n_submission_failure`
+	SubmissionSuccess  atomic.Uint64 `json:n_submission_success`
+	CompletedProcesses int           `json:completed_processes`
+	RunningProcesses   int           `json:running_processes`
 }
 
 func New(config Config) (*Core, error) {
@@ -81,12 +90,14 @@ func New(config Config) (*Core, error) {
 	core := &Core{
 		networkObservers: make([]SnapshotReceiver, 0),
 
-		badge:      badge,
-		network:    nm,
-		onEventMap: make(map[string](chan Event)),
+		badge:          badge,
+		network:        nm,
+		actionChannels: make(map[string](chan Event)),
 	}
 
 	core.updating.Store(false)
+
+	core.setupSync()
 
 	core.metrics.Created = time.Now()
 	return core, nil
@@ -101,7 +112,7 @@ func (c *Core) SubmitEvent(originatingAsset string, data string) error {
 	}
 
 	signalNameOnEvent := formatAssetOnEventSignalName(originatingAsset)
-	actionChannel, exists := c.onEventMap[signalNameOnEvent]
+	actionChannel, exists := c.actionChannels[signalNameOnEvent]
 	if !exists {
 		slog.Error("submission from valid un-mapped asset",
 			"onEvent", signalNameOnEvent)
@@ -136,6 +147,12 @@ func (c *Core) getNetworkSnapshot() NetworkSnapshot {
 	return ns
 }
 
+func (c *Core) setupSync() {
+	c.ctx = context.Background()
+	c.ctx, c.procCancel = context.WithCancel(c.ctx)
+	c.procWg = new(sync.WaitGroup)
+}
+
 func (c *Core) UpdateNetworkMap(topo Topo) error {
 
 	if c.updating.Load() {
@@ -155,40 +172,46 @@ func (c *Core) UpdateNetworkMap(topo Topo) error {
 	c.netmu.Lock()
 	defer c.netmu.Unlock()
 
+	if c.metrics.RunningProcesses > 0 {
+		slog.Debug("stopping previous action processors", "num", c.metrics.RunningProcesses)
+		c.procCancel()
+		c.procWg.Wait()
+	}
+	c.metrics.RunningProcesses = 0
+
+	c.metrics.CompletedProcesses += c.metrics.RunningProcesses
+
+	// Reset context for next run
+	c.setupSync()
+
 	c.network = nm
 	snapshot := c.getNetworkSnapshot()
 
-	// onEvent signals are emitted by the core when an event for an
-	// asset comes in so we need to setup the corresponding actions
+	c.actionChannels = make(map[string](chan Event))
 
-	c.onEventMap = make(map[string](chan Event))
+	for signalName, actions := range c.network.sigmap {
 
-	for name, _ := range c.network.assets {
-		onEvent := formatAssetOnEventSignalName(name)
-		actions, ok := c.network.sigmap[onEvent]
-		if !ok {
-			continue
-		}
+		signal := c.network.signals[signalName]
 
-		c.onEventMap[name] = make(chan Event)
+		c.actionChannels[signalName] = make(chan Event)
 
-		slog.Info("setting up onEvent for asset",
-			"asset", name)
-
+		// Start a process to handle execution of every action
+		// assigned to every signal
+		// For a large network this might be a problem, but for a
+		// self-hosted network of up-to a few hundred sensors/ reporters
+		// this will be fine
 		for _, action := range actions {
-			slog.Warn("NEET TO SETUP ACTION FOR EXEC",
-				"action",
-				action.Header.Name)
-
-			//TODO: for file reading, we need to configure a runner
-			//       to always read the file before interp
-
-			//TODO:  for other type we just need to have the runner ready
-
-			//TODO: hand the action  c.onEventMap[name] to consume on
+			proc := newProc(
+				signal,
+				action,
+				c.ctx,
+				c.actionChannels[signal.Header.Name])
+			proc.exec(c.procWg)
+			c.metrics.RunningProcesses += 1
 		}
-		return nil
 	}
+	slog.Debug("action processes started",
+		"count", c.metrics.RunningProcesses)
 
 	// Inform all of the observers in parallel that we have
 	// updated the network map
