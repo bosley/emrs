@@ -2,9 +2,16 @@ package core
 
 import (
 	"emrs/badger"
+	"errors"
+	"log/slog"
 	"maps"
 	"sync"
+	"sync/atomic"
+	"time"
 )
+
+var ErrUpdating = errors.New("Core is busy updating")
+var ErrNoMapping = errors.New("Asset does not have corresponding `onEvent` signal mapped")
 
 // Base configuration information required to run a core
 type Config struct {
@@ -31,6 +38,11 @@ type NetworkSnapshot struct {
 
 type SnapshotReceiver func(*NetworkSnapshot)
 
+type Event struct {
+	Origin string `json:asset_origin`
+	Data   string `json:data`
+}
+
 // Core EMRS object that maintains network configuration state,
 // the pub/sub event bus and other internal workings
 type Core struct {
@@ -39,6 +51,19 @@ type Core struct {
 	badge   badger.Badge
 	network *NetworkMap
 	netmu   sync.Mutex
+
+	updating atomic.Bool
+
+	onEventMap map[string](chan Event)
+
+	metrics Metrics
+}
+
+type Metrics struct {
+	Created           time.Time     `json:time_created`
+	SubmissionAttempt atomic.Uint64 `json:n_submission_attempt`
+	SubmissionFailure atomic.Uint64 `json:n_submission_failure`
+	SubmissionSuccess atomic.Uint64 `json:n_submission_success`
 }
 
 func New(config Config) (*Core, error) {
@@ -56,13 +81,37 @@ func New(config Config) (*Core, error) {
 	core := &Core{
 		networkObservers: make([]SnapshotReceiver, 0),
 
-		badge:   badge,
-		network: nm,
+		badge:      badge,
+		network:    nm,
+		onEventMap: make(map[string](chan Event)),
 	}
 
-	// TODO: core.setupEventBus
+	core.updating.Store(false)
 
+	core.metrics.Created = time.Now()
 	return core, nil
+}
+
+// Submit an event from an asset. In the event that the asset.onEvent
+// signal does not exist, then either the asset isn't valid, or the user
+// doesn't have the onEvent signal for the given asset mapped to any actions
+func (c *Core) SubmitEvent(originatingAsset string, data string) error {
+	if c.updating.Load() {
+		return ErrUpdating
+	}
+
+	signalNameOnEvent := formatAssetOnEventSignalName(originatingAsset)
+	actionChannel, exists := c.onEventMap[signalNameOnEvent]
+	if !exists {
+		slog.Error("submission from valid un-mapped asset",
+			"onEvent", signalNameOnEvent)
+		return ErrNoMapping
+	}
+	actionChannel <- Event{
+		Origin: originatingAsset,
+		Data:   data,
+	}
+	return nil
 }
 
 // If the current network map is updated, then some
@@ -89,6 +138,15 @@ func (c *Core) getNetworkSnapshot() NetworkSnapshot {
 
 func (c *Core) UpdateNetworkMap(topo Topo) error {
 
+	if c.updating.Load() {
+		return ErrUpdating
+	}
+
+	c.updating.Store(true)
+	defer c.updating.Store(false)
+
+	slog.Info("updating network map")
+
 	nm, err := NetworkMapFromTopo(topo)
 	if err != nil {
 		return err
@@ -97,22 +155,40 @@ func (c *Core) UpdateNetworkMap(topo Topo) error {
 	c.netmu.Lock()
 	defer c.netmu.Unlock()
 
-	// TODO: Put event receiver pipeline from ingestion
-	//        into a buffered mode so all submitted events
-	//        are stored in memory temporarily
-
-	// TODO: Stop the pub-sub functionality, remove all routes
-	//        and all consumers. full reset
-
 	c.network = nm
 	snapshot := c.getNetworkSnapshot()
 
-	// TODO: Restart/reconfigure pub-sub
+	// onEvent signals are emitted by the core when an event for an
+	// asset comes in so we need to setup the corresponding actions
 
-	// TODO: Release the buffers onto the network. Keep storing events into buffer though
-	//       until the moment the buffer is empty for the first time. Once its empty, disable
-	//       the buffering. This will be to ensure that messages are delivered in the order
-	//       that they are received by the endpoint
+	c.onEventMap = make(map[string](chan Event))
+
+	for name, _ := range c.network.assets {
+		onEvent := formatAssetOnEventSignalName(name)
+		actions, ok := c.network.sigmap[onEvent]
+		if !ok {
+			continue
+		}
+
+		c.onEventMap[name] = make(chan Event)
+
+		slog.Info("setting up onEvent for asset",
+			"asset", name)
+
+		for _, action := range actions {
+			slog.Warn("NEET TO SETUP ACTION FOR EXEC",
+				"action",
+				action.Header.Name)
+
+			//TODO: for file reading, we need to configure a runner
+			//       to always read the file before interp
+
+			//TODO:  for other type we just need to have the runner ready
+
+			//TODO: hand the action  c.onEventMap[name] to consume on
+		}
+		return nil
+	}
 
 	// Inform all of the observers in parallel that we have
 	// updated the network map
@@ -123,5 +199,6 @@ func (c *Core) UpdateNetworkMap(topo Topo) error {
 			return nil
 		})
 
+	slog.Info("network map updated")
 	return nil
 }

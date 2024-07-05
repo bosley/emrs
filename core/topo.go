@@ -33,6 +33,11 @@ const (
 	TriggerOnEmit           = "onEmit"
 )
 
+const (
+	ExecutionTypeFile     = "file"
+	ExecutionTypeEmbedded = "embedded"
+)
+
 type HeaderData struct {
 	Name        string   `json:name`
 	Description string   `json:description`
@@ -55,7 +60,8 @@ type Signal struct {
 
 type Action struct {
 	Header        HeaderData `json:header`
-	ExecutionData []byte     `json:data`
+	ExecutionType string     `json:type`
+	Data          string     `json:data`
 }
 
 type Topo struct {
@@ -133,6 +139,20 @@ func NetworkMapFromTopo(topo Topo) (*NetworkMap, error) {
 
 	nm := BlankNetworkMap()
 
+	validTriggers := SetFrom([]string{
+		TriggerOnEvent,
+		TriggerOnTimeout,
+		TriggerOnBumpTimeout,
+		TriggerOnShutdownNotify,
+		TriggerOnSchedule,
+		TriggerOnEmit,
+	})
+
+	validActionTypes := SetFrom([]string{
+		ExecutionTypeFile,
+		ExecutionTypeEmbedded,
+	})
+
 	if err := forEach(topo.Sectors, func(i int, x *Sector) error {
 		return nm.validateSectors(x)
 	}); err != nil {
@@ -144,13 +164,25 @@ func NetworkMapFromTopo(topo Topo) (*NetworkMap, error) {
 			return NErr("Duplicate action name").
 				Push(fmt.Sprintf("Action (%s) does not have a unique name", x.Header.Name))
 		}
+		if !validActionTypes.Contains(x.ExecutionType) {
+			return NErr("Invalid trigger specified").
+				Push(fmt.Sprintf("Action (%s) has invalid execution type: %s", x.Header.Name, x.ExecutionType))
+		}
+
 		nm.actions[x.Header.Name] = x
+
 		return nil
 	}); err != nil {
 		return nil, err
 	}
 
 	if err := forEach(topo.Signals, func(i int, x *Signal) error {
+
+		if !validTriggers.Contains(x.Trigger) {
+			return NErr("Invalid trigger specified").
+				Push(fmt.Sprintf("Signal (%s) has invalid trigger: %s", x.Header.Name, x.Trigger))
+		}
+
 		if mapContains(nm.signals, x.Header.Name) {
 			return NErr("Duplicate signal name").
 				Push(fmt.Sprintf("Signal (%s) does not have a unique name", x.Header.Name))
@@ -216,10 +248,14 @@ func makeAssetFullName(s string, a string) string {
 	return fmt.Sprintf("%s.%s", s, a)
 }
 
-func makeAssetOnEventSignal(a string) *Signal {
+func formatAssetOnEventSignalName(asset string) string {
+	return fmt.Sprintf("%s:onEvent", asset)
+}
+
+func makeAssetOnEventSignal(asset string) *Signal {
 	return &Signal{
 		Header: HeaderData{
-			Name:        fmt.Sprintf("%s:onEvent", a),
+			Name:        formatAssetOnEventSignalName(asset),
 			Description: "Signal that fires when associated asset emits event to network",
 			Tags:        []string{},
 		},

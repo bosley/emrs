@@ -62,8 +62,12 @@ func randAsset() *Asset {
 
 func randAction() *Action {
 	return &Action{
-		Header:        randHeader(),
-		ExecutionData: make([]byte, 0),
+		Header: randHeader(),
+		ExecutionType: randSel[string]([]string{
+			ExecutionTypeFile,
+			ExecutionTypeEmbedded,
+		}),
+		Data: randString(25),
 	}
 }
 
@@ -142,6 +146,15 @@ func randTopoDuplicateSectorNames() Topo {
 	return r
 }
 
+func randTopoInvalidSignalTriggers() Topo {
+	r := randTopoLarge()
+	iterate(r.Signals, func(it Iter[*Signal]) error {
+		r.Signals[it.Idx].Trigger = "INVALID SIG TRIGGER"
+		return nil
+	})
+	return r
+}
+
 func TestCoreTopo(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
@@ -169,6 +182,24 @@ func TestCoreBadTopoSector(t *testing.T) {
 	_, err := NetworkMapFromTopo(tmap)
 	if err == nil {
 		t.Fatal("Expected error for duplicate sector names")
+	}
+}
+
+func TestCoreBadTopoInvalidActionTrigger(t *testing.T) {
+
+	tmap := randTopoInvalidSignalTriggers()
+	_, err := NetworkMapFromTopo(tmap)
+	if err == nil {
+		t.Fatal("Expected error for duplicate sector names")
+	}
+}
+
+func TestCoreBadTopoSignalTriggers(t *testing.T) {
+
+	tmap := randTopoInvalidSignalTriggers()
+	_, err := NetworkMapFromTopo(tmap)
+	if err == nil {
+		t.Fatal("Expected error for invalid signal names")
 	}
 }
 

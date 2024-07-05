@@ -14,6 +14,16 @@ func NewSet() Set {
 	return make(map[string]bool)
 }
 
+func SetFrom(options []string) Set {
+	s := NewSet()
+	iterate[string](options,
+		func(it Iter[string]) error {
+			s.Insert(it.Value)
+			return nil
+		})
+	return s
+}
+
 func (s Set) Contains(x string) bool {
 	_, o := s[x]
 	return o
