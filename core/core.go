@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"emrs/badger"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"maps"
@@ -73,6 +74,18 @@ type Metrics struct {
 	SubmissionSuccess  atomic.Uint64 `json:n_submission_success`
 	CompletedProcesses int           `json:completed_processes`
 	RunningProcesses   int           `json:running_processes`
+}
+
+func (c *Core) GetPublicKey() string {
+	return c.badge.PublicKey()
+}
+
+func (c *Core) GetTopo() string {
+	b, e := json.Marshal(c.network.ToTopo())
+	if e != nil {
+		panic("failed to marshal internal map representaiton")
+	}
+	return string(b)
 }
 
 func New(config Config) (*Core, error) {

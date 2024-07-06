@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"emrs/badger"
 	"emrs/core"
 	"errors"
 	"flag"
@@ -48,13 +49,23 @@ func main() {
 		panic("failed to build configuration file")
 	}
 
+	if e := cfg.Validate(); e != nil {
+		slog.Error("Error:%v", e)
+		panic("invalid configuration")
+	}
+
 	appCore, err := core.New(cfg.EmrsCore)
 	if err != nil {
 		slog.Error("Error:%v", err)
 		panic("failed to create core")
 	}
 
-	appCore.AddSnapshotReceiver(networkMapUpdateLogger)
+	appCore.AddSnapshotReceiver(func(ns *core.NetworkSnapshot) {
+		slog.Info("core network map updated",
+			"assets", len(ns.Assets),
+			"signals", len(ns.Signals),
+			"mapped-actions", len(ns.SignalMap))
+	})
 
 	/*
 	   TODO:
@@ -83,7 +94,23 @@ func main() {
 	*/
 	gins := gin.New()
 
-	gins.POST("/api", appCore.Api)
+	if cfg.Runtime.Mode == "rel" ||
+		cfg.Runtime.Mode == "release" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	gins.POST("/", buildSubmit(appCore))
+
+	priv := gins.Group("/api")
+	priv.Use(buildApiAuthMiddleware(
+		appCore.GetPublicKey(),
+		cfg.Hosting.ApiKeys,
+	))
+
+	{
+		priv.GET("/", buildApi(appCore))
+		priv.POST("/update", buildApiUpdate(appCore))
+	}
 
 	cert, err := cfg.LoadTLSCert()
 
@@ -132,4 +159,95 @@ func doNewConfig(name string, force bool) *Config {
 		os.Exit(1)
 	}
 	return cfg
+}
+
+func buildSubmit(app *core.Core) func(*gin.Context) {
+	return func(c *gin.Context) {
+
+		type EventSubmit struct {
+			Origin string `json:"origin"`
+			Data   string `json:"data"`
+		}
+
+		var es EventSubmit
+		c.BindJSON(&es)
+
+		if err := app.SubmitEvent(es.Origin, es.Data); err != nil {
+			c.JSON(400, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(200, gin.H{
+			"status": "okay",
+		})
+	}
+}
+
+func buildApiAuthMiddleware(pk string, tokens []string) func(*gin.Context) {
+	authSet := core.SetFrom(tokens)
+
+	return func(c *gin.Context) {
+		key, ok := c.GetQuery("key")
+		if !ok {
+			slog.Error("no api key present")
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "No api key given",
+			})
+			c.Abort()
+		}
+
+		if !authSet.Contains(key) {
+			slog.Error("key not in known set of vouchers", "key", key)
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "Invalid api key",
+			})
+			c.Abort()
+		}
+
+		if !badger.ValidateVoucher(pk, key) {
+			slog.Error("badger failed to validate key", "key", key)
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "Invalid api key",
+			})
+			c.Abort()
+		}
+	}
+}
+
+func buildApi(app *core.Core) func(*gin.Context) {
+	return func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"public_key": app.GetPublicKey(),
+			"topo":       app.GetTopo(),
+		})
+	}
+}
+
+func buildApiUpdate(app *core.Core) func(*gin.Context) {
+	return func(c *gin.Context) {
+
+		slog.Debug("update topo request")
+
+		type UpdateSubmission struct {
+			NewTopo core.Topo `json:"topo"`
+		}
+
+		var us UpdateSubmission
+		c.BindJSON(&us)
+
+		if err := app.UpdateNetworkMap(us.NewTopo); err != nil {
+			slog.Error("failed to update topo", "error", err.Error())
+			c.JSON(400, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		slog.Info("network map updated")
+		c.JSON(200, gin.H{
+			"status": "okay",
+		})
+	}
 }
