@@ -5,6 +5,7 @@ import (
 	"emrs/badger"
 	"emrs/core"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"os"
 	"time"
@@ -16,6 +17,7 @@ type RuntimeInfo struct {
 
 type HostingInfo struct {
 	ApiAddress string   `json:api_address`
+	UiAddress  string   `json:api_address`
 	ApiKeys    []string `json:api_keys`
 	Key        string   `json:https_key`
 	Cert       string   `json:https_cert`
@@ -27,9 +29,49 @@ type Config struct {
 	EmrsCore core.Config `json:core` // Consider having this be a byte array, and b64 encoding the identity before saving/ decoding before handing to core
 }
 
-func (c *Config) Validate() error {
+func (cfg *Config) Validate() error {
 
-	slog.Warn("NEED TO VALIDATE CONFIG => ENSURE THAT ALL TOKENS IN HOSTING INFO BELONG TO, AND CAN BE AUTHED BY, THE EXISTING IDENTITY")
+	if cfg.Hosting.ApiAddress == cfg.Hosting.UiAddress {
+		return errors.New("Hosting address and UI address must not be the same")
+	}
+
+	badge, err := badger.DecodeIdentityString(cfg.EmrsCore.Identity)
+	if err != nil {
+		return err
+	}
+
+	if len(cfg.Hosting.ApiKeys) == 0 {
+		slog.Warn("no api keys present for identity - making 1 to utilize for UI")
+		apiKeys, err := generateApiKeys(1, badge)
+		if err != nil {
+			return err
+		}
+		cfg.Hosting.ApiKeys = apiKeys
+	}
+
+	validated := make([]string, 0)
+
+	slog.Info("validating api keys")
+	for i, key := range cfg.Hosting.ApiKeys {
+		slog.Info("scanning key", "num", i)
+
+		if !badger.ValidateVoucher(
+			badge.PublicKey(),
+			key) {
+
+			slog.Warn("Api key INVALID",
+				"num", i, "key", string(key[:10]))
+		} else {
+			validated = append(validated, key)
+		}
+	}
+
+	if len(validated) != len(cfg.Hosting.ApiKeys) {
+		slog.Warn("Invalid API keys present in config")
+	} else {
+		slog.Info("API Keys validated against server identity")
+	}
+
 	return nil
 
 }
@@ -64,6 +106,7 @@ func CreateConfigTemplate() *Config {
 		},
 		Hosting: HostingInfo{
 			ApiAddress: "localhost:20000",
+			UiAddress:  "localhost:8080",
 			ApiKeys:    apiKeys,
 			Key:        "./dev/keys/server.key",
 			Cert:       "./dev/keys/server.crt",
