@@ -67,31 +67,6 @@ func main() {
 			"mapped-actions", len(ns.SignalMap))
 	})
 
-	/*
-	   TODO:
-
-
-	   Create a gin server in a public module called API eAPI or something
-	   this will be what people can use to write go programs to interface with
-	   the server.
-
-	   UI Should have port and stuff removed from config. The only web thing
-	   emrs should be supporting a the moment is the api and the event endpoints.
-
-	   UI can be added later, utilizing the /api endpoint to configure/ edit the server
-	   I might make the UI an entirely different app/repo
-
-	   Public Group
-	       /event    POST    Post an event to the server - Later add config to make voucher locked
-	       /api
-	         Middleware will grab and authenticate API vouchers for
-	         every request
-
-	         All requests are POSTS of JSON commands. Each cmmand will have the API token
-	         and specific subcommands for querying/setting data
-
-
-	*/
 	gins := gin.New()
 
 	if cfg.Runtime.Mode == "rel" ||
@@ -100,6 +75,11 @@ func main() {
 	}
 
 	gins.POST("/", buildSubmit(appCore))
+	gins.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ready",
+		})
+	})
 
 	priv := gins.Group("/api")
 	priv.Use(buildApiAuthMiddleware(
