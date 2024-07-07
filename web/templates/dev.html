@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 
 <html lang="en">
@@ -74,13 +75,6 @@ nav {
   border-color: rgba(223,225,229,0);
 }
 
-main {
-  height: 100%;
-  width: 100%;
-  position: fixed;
-  padding-top: 20px;
-  padding-left: 200px;
-}
 
 .user-display {
   font-family: 'Roboto Slab', serif;
@@ -209,6 +203,15 @@ main {
   font-size: 1rem;
 }
 
+.sector-tile {
+  min-height: 10%;
+
+  text-wrap: wrap;
+  border-style: dotted;
+  border-color: black;
+  border-width: 1px;
+}
+
 input[type=text]:active, input[type=text]:focus {
   border-color: black;
 }
@@ -220,80 +223,61 @@ input[type=password]:active, input[type=password]:focus {
 </style>
 
 <body>
-      <!-- LHS Nav Bar -->
-      <nav>
-        <!-- Nav Contents -->
-          <div 
-            class="user-info-tile"
-            onclick="alertNotYetDone()"
-            onmouseover="navControlTileHover('user data')">
-            <img class="pfp" src="img/icons8-test-account-100.png" >
-            <div class="user-display" id="emrs_user_name">....</div>
-            <!-- EMRS Version info -->
-            <div class="version-text" id="emrs_version_indicator">EMRS VX.X.X</div>
-            <!-- / EMRS Version info -->
-          </div>
-          <div class="info-hover-text" id="nav-hover-text" style="line-height:7rem;">
-            <br>
-          </div>
-          <div
-            class="nav-tile"
-            onclick="loadDashboard()"
-            onmouseover="navControlTileHover('dashboard')" >
-            <img class="panel-tile-img" src="img/icons8-menu-100.png">
-          </div>
-          <div
-            class="nav-tile"
-            onclick="loadTerminal()"
-            onmouseover="navControlTileHover('terminal')">
-            <img class="panel-tile-img" src="img/icons8-console-100.png">
-          </div>
-          <div
-            class="nav-tile"
-            onclick="alertNotYetDone()"
-            onmouseover="navControlTileHover('settings')">
-            <img class="panel-tile-img" src="img/icons8-gear-100.png">
-          </div>
-          <div
-            class="nav-tile"
-            onclick="performLogout()"
-            onmouseover="navControlTileHover('logout')">
-            <img class="panel-tile-img" src="img/icons8-logout-100.png">
-          </div>
-          <p>
-          <div id="emrs_app_alerts"></div>
-      </nav>
-      <main>
-        <div id="emrs_app_content"></div> 
-        </div>
-      </main>
+  <main>
+
+    <div class="row">
+
+
+      <div class="column column-50 column-offset-25 shadowed">
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Sector Name</th>
+              <th>Assets</th>
+              <th>Description</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody >
+            <tr>
+              <td>Garden</td>
+              <td>27</td>
+              <td>asldka lkmdaklsdmakl mdklamskld aklds</td>
+              <td>
+                  <button class="delete-button float-right"> Delete </button>
+                  <button class="edit-button float-right"> Edit </button>
+              </td>
+            </tr>
+            <tr >
+              <td>Garage</td>
+              <td>12</td>
+              <td>asldka lkmdaklsdmakl mdklamskld aklds</td>
+              <td>
+                  <button class="delete-button float-right"> Delete </button>
+                  <button class="edit-button float-right"> Edit </button>
+              </td>
+            </tr>
+            <tr>
+              <td>Field</td>
+              <td>127</td>
+              <td>asldka lkmdaklsdmakl mdklamskld aklds</td>
+              <td>
+                  <button class="delete-button float-right"> Delete </button>
+                  <button class="edit-button float-right"> Edit </button>
+              </td>
+            </tr>
+        
+          </tbody>
+        </table>
+
+      </div>
+      </div>
+    </div> 
+    <br>
+
+  </main>
 </body>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
-
-    <script type="application/javascript">
-      function navControlTileHover(data) {
-        $("#nav-hover-text").html(data)
-      }
-
-      function dashboardControlTileHover(data) {
-        $("#dashboard-hover-text").html(data)
-      }
-
-      function getApiKeyUrlParam() {
-        return {{ .KeyParam }}
-      }
-
-      console.log(getApiKeyUrlParam())
-
-    </script>
-
-    <script src="app/table.js"></script>
-    <script src="app/emrs.js"></script>
-    <script src="app/pages/terminal.js"></script>
-    <script src="app/pages/dashboard.js"></script>
-    <script src="app/alerts.js"></script>
-    <script src="app/app.js"></script>
-    <script src="app/main.js"></script>
 </html>
 

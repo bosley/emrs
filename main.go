@@ -25,6 +25,7 @@ func main() {
 	selectedConfig := flag.String("config", defaultConfigName, "Use specified config file")
 	newConfig := flag.Bool("new", false, "Generate a template config file using [config] as the filename")
 	overwriteConfig := flag.Bool("force", false, "Force overwrite [config] with [new] file")
+	uiEnabled := flag.Bool("ui", true, "Enable the UI endpoint for configuring the server setup")
 
 	flag.Parse()
 
@@ -35,10 +36,8 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	go runUi(cfg)
-
 	slog.Info("Launching EMRS Server")
-	runServer(cfg)
+	runServer(cfg, *uiEnabled)
 	return
 }
 

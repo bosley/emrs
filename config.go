@@ -5,7 +5,6 @@ import (
 	"emrs/badger"
 	"emrs/core"
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"os"
 	"time"
@@ -16,11 +15,10 @@ type RuntimeInfo struct {
 }
 
 type HostingInfo struct {
-	ApiAddress string   `json:api_address`
-	UiAddress  string   `json:api_address`
-	ApiKeys    []string `json:api_keys`
-	Key        string   `json:https_key`
-	Cert       string   `json:https_cert`
+	Address string   `json:api_address`
+	ApiKeys []string `json:api_keys`
+	Key     string   `json:https_key`
+	Cert    string   `json:https_cert`
 }
 
 type Config struct {
@@ -30,10 +28,6 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-
-	if cfg.Hosting.ApiAddress == cfg.Hosting.UiAddress {
-		return errors.New("Hosting address and UI address must not be the same")
-	}
 
 	badge, err := badger.DecodeIdentityString(cfg.EmrsCore.Identity)
 	if err != nil {
@@ -105,11 +99,10 @@ func CreateConfigTemplate() *Config {
 			Mode: "debug",
 		},
 		Hosting: HostingInfo{
-			ApiAddress: "localhost:20000",
-			UiAddress:  "localhost:8080",
-			ApiKeys:    apiKeys,
-			Key:        "./dev/keys/server.key",
-			Cert:       "./dev/keys/server.crt",
+			Address: "localhost:8080",
+			ApiKeys: apiKeys,
+			Key:     "./dev/keys/server.key",
+			Cert:    "./dev/keys/server.crt",
 		},
 		EmrsCore: core.Config{
 			Identity: badge.EncodeIdentityString(),

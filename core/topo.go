@@ -22,6 +22,7 @@ package core
 
 import (
 	"fmt"
+	"log/slog"
 )
 
 const (
@@ -337,17 +338,20 @@ func (nm *NetworkMap) ContainsSignal(signal string) bool {
 
 func (nm *NetworkMap) DeleteSector(sector string) {
 	if !nm.ContainsSector(sector) {
+		slog.Debug("nm doesn't contain sector", "name", sector)
 		return
 	}
+
 	s := nm.sectors[sector]
 	forEach(s.Assets, func(i int, a *Asset) error {
 		fullName := makeAssetFullName(s.Header.Name, a.Header.Name)
 		delete(nm.assets, fullName)
 		sig := makeAssetOnEventSignal(fullName)
 		delete(nm.signals, sig.Header.Name)
-		delete(nm.sectors, sector)
 		return nil
 	})
+
+	delete(nm.sectors, sector)
 }
 
 func (nm *NetworkMap) DeleteAsset(sector string, asset string) {

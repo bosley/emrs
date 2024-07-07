@@ -81,11 +81,23 @@ func (c *Core) GetPublicKey() string {
 }
 
 func (c *Core) GetTopo() string {
+
+	c.netmu.Lock()
+	defer c.netmu.Unlock()
+
 	b, e := json.Marshal(c.network.ToTopo())
 	if e != nil {
 		panic("failed to marshal internal map representaiton")
 	}
 	return string(b)
+}
+
+func (c *Core) GetRawTopo() Topo {
+
+	c.netmu.Lock()
+	defer c.netmu.Unlock()
+
+	return c.network.ToTopo()
 }
 
 func New(config Config) (*Core, error) {
