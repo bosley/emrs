@@ -99,7 +99,8 @@ class PageDashboard {
         this.topo.Sectors[i].Header.Name,
         this.topo.Sectors[i].Assets.length,
         this.topo.Sectors[i].Header.Description,
-        `<button class="edit-button" onclick="app.getPageDashboard().deleteSector('`+ this.topo.Sectors[i].Header.Name +`');">Delete</button>`,
+        `<button class="edit-button" onclick="app.getPageDashboard().loadSector('`+ this.topo.Sectors[i].Header.Name +`');">Edit</button>
+         <button class="delete-button" onclick="app.getPageDashboard().deleteSector('`+ this.topo.Sectors[i].Header.Name +`');">Delete</button>`,
       ])
     }
 
@@ -199,6 +200,11 @@ class PageDashboard {
         }
       })(this))
     })
+  }
+
+  loadSector(name) {
+
+    console.log("Need to load the sector and display assets", name)
   }
 
 
