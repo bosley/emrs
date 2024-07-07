@@ -10,13 +10,14 @@ import (
 )
 
 const (
-	emrsVersion = "0.0.0"
-  emrsActionScriptPrefix = "action_"
+	emrsVersion            = "0.0.0"
+	emrsActionScriptPrefix = "action_"
 )
 
 const (
-  defaultConfigName = "emrs.cfg"
+	defaultConfigName = "emrs.cfg"
 )
+
 func main() {
 
 	slog.SetDefault(

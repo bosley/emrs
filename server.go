@@ -14,20 +14,26 @@ import (
 
 func runServer(cfg *Config, uiEnabled bool) {
 
-  loadActions := func() []string {
-    files, err := cfg.LoadActions()
-    if err != nil {
-      slog.Error("error loading actions", "error", err.Error())
-      return []string{}
-    }
-    return files
-  }
+	loadActions := func() string {
+		files, err := cfg.LoadActions()
+		if err != nil {
+			slog.Error("error loading actions", "error", err.Error())
+			return "[]"
+		}
 
-  if len(loadActions()) == 0 {
-    slog.Warn("No action files were found")
-  }
+		b, e := json.Marshal(files)
+		if e != nil {
+			slog.Error("failed to JSON the action files", "error", e.Error())
+			return "[]"
+		}
+		return string(b)
+	}
 
-	appCore, err := core.New(cfg.EmrsCore, loadActions)
+	if len(loadActions()) == 0 {
+		slog.Warn("No action files were found")
+	}
+
+	appCore, err := core.New(cfg.EmrsCore)
 	if err != nil {
 		slog.Error("Error:%v", err)
 		panic("failed to create core")
@@ -56,6 +62,11 @@ func runServer(cfg *Config, uiEnabled bool) {
 				"topo": appCore.GetTopo(),
 			})
 		})
+		priv.GET("/actions", func(c *gin.Context) {
+			c.JSON(200, gin.H{
+				"files": loadActions(),
+			})
+		})
 	}
 
 	if uiEnabled {
@@ -70,7 +81,7 @@ func runServer(cfg *Config, uiEnabled bool) {
 				"KeyParam": fmt.Sprintf(
 					"?key=%s",
 					cfg.Hosting.ApiKeys[0]),
-        "Version": emrsVersion,
+				"Version": emrsVersion,
 			})
 		})
 
@@ -312,7 +323,7 @@ func buildApiUpdate(app *core.Core) func(*gin.Context) {
 				break
 			}
 			break
-		case SubjectSignal: // TODO:
+		case SubjectSignal: // TODO: Figure out if this is needed
 		case SubjectMapping: // TODO: map or unmap signal/action
 		case SubjectTopo: // TODO : Figure out if this is needed
 		}

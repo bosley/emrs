@@ -1,21 +1,9 @@
 class PageAction {
-  constructor(alerts, getTopo) {
+  constructor(alerts, getTopo, getActions) {
     this.alerts = alerts
     this.selected = false
     this.getTopo = getTopo
-
-/*
-    I think instead of handing data to the thing directly,
-    we should hand an emrs context. This way we can have access from one
-    object, all of the api and the data
-
-*/
-    this.default_action_body = `
-
-func Exec(data string) {
-  println("Action called upon with: ", data)
-}
-    `
+    this.getActions = getActions
   }
 
   setIdle(contentHook) {
@@ -30,22 +18,58 @@ func Exec(data string) {
     $(contentHook).html('<div id="emrs-generated-viewport"></div>')
     $("#emrs-generated-viewport").html(`<div id="action-view"></div>`)
 
-    this.drawActionTable()
+    this.loadView()
+
+
+    /*
+
+
+      TODO:
+
+
+          Need to create the page to associate signals to actions.
+
+          we can use this.getActions() to get a list of files that the
+          user has on disk.
+
+          adding an action is adding the file path
+          to the EmrsAction.info
+
+          Signals are in the topo representation, and sig
+
+
+      */
+
+
+
   }
 
   updateTopo() {
     this.topo = this.getTopo()
   }
 
-  drawActionTable() {
+  updateActionsFileList() {
+    this.action_files = this.getActions()
+  }
+
+  updateInfo() {
     this.updateTopo()
-    
+    this.updateActionsFileList()
+  }
+
+  loadView() {
+    this.updateInfo()
 
     $("#action-view").html("")
     
     $("#action-view").append(`
-      <button class="edit-button" onclick="app.getPageActions().drawActionForm();">+ Action</button>
+      <button class="edit-button" onclick="app.getPageActions().loadActionEditor(null);">+ Action</button>
       `)
+
+    this.drawActionTable()
+  }
+
+  drawActionTable() {
 
     let headers = ["Action Name", "Assigned", "Description", ""]
     let content = []
@@ -65,8 +89,24 @@ func Exec(data string) {
     $("#action-view").append(new Table(headers, content).value())
   }
 
-  drawActionForm() {
+
+
+
+
+
+
+
+
+
+
+
+  loadActionEditor(action) {
+
     console.log("draw action form")
+
+    if (null === action) {
+      console.log("load action editor with no pre-filled data")
+    }
 
     $("#action-view").html(`
           <div class="row">
@@ -76,7 +116,7 @@ func Exec(data string) {
             </div>
             <div class="column column-10" id="emrs_input_button_col">
               <button class="edit-button" onclick="app.getPageActions().addAction()">ADD</button>
-              <button class="edit-button" onclick="app.getPageActions().drawActionTable();"> << </button>
+              <button class="edit-button" onclick="app.getPageActions().loadView();"> << </button>
             </div>
       `)
   }
@@ -120,13 +160,12 @@ func Exec(data string) {
       error: ((function(obj){
         return function(){ 
           app.alerts.error("Failed to add action")
-          obj.drawActionTable()
+          obj.loadView()
         }
       })(this)),
       success: ((function(obj){
         return function(data){
-          obj.updateTopo()
-          obj.drawActionTable()
+          obj.loadView()
           app.alerts.info("Action Added")
         }
       })(this))
@@ -154,14 +193,13 @@ func Exec(data string) {
       error: ((function(obj){
         return function(){ 
           app.alerts.error("Failed to delete action")
-          obj.drawActionTable()
+          obj.loadView()
         }
       })(this)),
       success: ((function(obj){
         return function(data){
           console.log("complete", data)
-          obj.updateTopo()
-          obj.drawActionTable()
+          obj.loadView()
           app.alerts.info("Action Deleted")
         }
       })(this))

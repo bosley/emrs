@@ -22,6 +22,7 @@ package core
 
 import (
 	"fmt"
+  "strings"
 	"log/slog"
 )
 
@@ -275,7 +276,21 @@ func (nm *NetworkMap) AddSector(s *Sector) error {
 	return nil
 }
 
+func validStrings(ss ...string) bool {
+  for _, s := range ss {
+    if len(strings.TrimSpace(s)) == 0 {
+      return false
+    }
+  }
+  return true
+}
+
 func (nm *NetworkMap) AddAsset(sectorName string, asset *Asset) error {
+
+  if !validStrings(sectorName, asset.Header.Name) {
+		return NErr("invalid (empty) parameters")
+  }
+
 	targetSector, hasSec := nm.sectors[sectorName]
 	if !hasSec {
 		return NErr("Unknown sector given").
@@ -301,6 +316,11 @@ func (nm *NetworkMap) AddAsset(sectorName string, asset *Asset) error {
 }
 
 func (nm *NetworkMap) AddAction(action *Action) error {
+
+  if !validStrings(action.Header.Name) {
+		return NErr("invalid (empty) parameters")
+  }
+
 	if mapContains(nm.actions, action.Header.Name) {
 		return NErr("Duplicate action name").
 			Push(fmt.Sprintf("Action name (%s) is not unique", action.Header.Name))
@@ -310,6 +330,11 @@ func (nm *NetworkMap) AddAction(action *Action) error {
 }
 
 func (nm *NetworkMap) AddSignal(signal *Signal) error {
+
+  if !validStrings(signal.Header.Name) {
+		return NErr("invalid (empty) parameters")
+  }
+
 	if mapContains(nm.signals, signal.Header.Name) {
 		return NErr("Duplicate signal name").
 			Push(fmt.Sprintf("Signal name (%s) is not unique", signal.Header.Name))

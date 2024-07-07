@@ -30,7 +30,7 @@ class Application {
 
     this.pages = new Map()
     this.pages.set(ApplicationPage.DASHBOARD, new PageDashboard(this.alerts, this.getTopo))
-    this.pages.set(ApplicationPage.ACTIONS, new PageAction(this.alerts, this.getTopo))
+    this.pages.set(ApplicationPage.ACTIONS, new PageAction(this.alerts, this.getTopo, this.getActionFiles))
     this.pages.set(ApplicationPage.TERMINAL, new PageTerminal(this.alerts, this.getTopo))
 
     this.content_hook = ui_elements.get("content")
@@ -92,6 +92,31 @@ class Application {
     })
 
     return this.topo
+  }
+
+  getActionFiles() {
+    $.ajax({
+      type: "GET",
+      url: "api/actions" + getApiKeyUrlParam(),
+      dataType: 'json',
+      async: false,
+      error: ((function(obj){
+        return function(){ 
+          console.log("failed to retrieve emrs actions")
+          obj.alerts.error("Failed to retrieve EMRS actions")
+        }
+      })(this)),
+      success: ((function(obj){
+        return function(data){
+          console.log(data)
+          obj.actions_list = JSON.parse(data.files)
+          console.log("actions list updated")
+          console.log(obj.actions_list)
+        }
+      })(this))
+    })
+
+    return this.actions_list
   }
 }
 
