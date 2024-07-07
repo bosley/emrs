@@ -158,18 +158,27 @@ func buildApi(app *core.Core) func(*gin.Context) {
 
 func buildApiUpdate(app *core.Core) func(*gin.Context) {
 	return func(c *gin.Context) {
-
 		slog.Debug("api update")
 
 		var msg ApiMsg
-		c.BindJSON(&msg)
+		if e := c.BindJSON(&msg); e != nil {
+			slog.Error("failed to bind apimsg to request data", "error", e.Error())
+			c.JSON(400, gin.H{
+				"reason": "Failed to decode message data",
+			})
+			return
+		}
+
+		slog.Debug("Unmarshaled Api Message", "MSG", msg.String())
 
 		currentMap, err := core.NetworkMapFromTopo(app.GetRawTopo())
 
 		if err != nil {
+			slog.Error("failed to load current network map", "error", err.Error())
 			c.JSON(500, gin.H{
 				"reason": "Unable to load current network map",
 			})
+			return
 		}
 
 		validOps := core.SetFrom([]string{
@@ -210,27 +219,87 @@ func buildApiUpdate(app *core.Core) func(*gin.Context) {
 			case OpAdd:
 				x := new(core.Sector)
 				if e := json.Unmarshal([]byte(msg.Data), x); e != nil {
+					slog.Error("Failed to decode data", "error", e.Error())
 					c.JSON(400, gin.H{
 						"reason": "Failed to decode message data",
 					})
 					return
 				}
 				if e := currentMap.AddSector(x); e != nil {
+					slog.Error("Failed to decode data", "error", e.Error())
 					slog.Error(e.Error())
 					c.JSON(400, gin.H{
 						"reason": e.Error(),
 					})
 					return
 				}
+				slog.Debug("add sector", "name", x.Header.Name)
 				break
 			case OpDel:
 				currentMap.DeleteSector(msg.Data)
+				slog.Debug("delete sector", "name", msg.Data)
 				break
 			}
 			break
 		case SubjectAsset:
-		case SubjectSignal:
+			switch msg.Op {
+			case OpAdd:
+				x := new(ApiAddAsset)
+				if e := json.Unmarshal([]byte(msg.Data), x); e != nil {
+					c.JSON(400, gin.H{
+						"reason": "Failed to decode message data",
+					})
+					return
+				}
+				if e := currentMap.AddAsset(x.Sector, &x.Asset); e != nil {
+					slog.Error(e.Error())
+					c.JSON(400, gin.H{
+						"reason": e.Error(),
+					})
+					return
+				}
+				slog.Debug("add asset", "name", x.Asset.Header.Name)
+				break
+			case OpDel:
+				x := new(ApiAddAsset)
+				if e := json.Unmarshal([]byte(msg.Data), x); e != nil {
+					c.JSON(400, gin.H{
+						"reason": "Failed to decode message data",
+					})
+					return
+				}
+				currentMap.DeleteAsset(x.Sector, x.Asset.Header.Name)
+				slog.Debug("delete asset", "name", x.Asset.Header.Name)
+				break
+			}
+			break
 		case SubjectAction:
+			switch msg.Op {
+			case OpAdd:
+				x := new(core.Action)
+				if e := json.Unmarshal([]byte(msg.Data), x); e != nil {
+					c.JSON(400, gin.H{
+						"reason": "Failed to decode message data",
+					})
+					return
+				}
+				if e := currentMap.AddAction(x); e != nil {
+					slog.Error(e.Error())
+					c.JSON(400, gin.H{
+						"reason": e.Error(),
+					})
+					return
+				}
+				slog.Debug("add action", "name", x.Header.Name)
+				break
+			case OpDel:
+				currentMap.DeleteAction(msg.Data)
+				slog.Debug("delete action", "name", msg.Data)
+				break
+			}
+			break
+
+		case SubjectSignal:
 		case SubjectMapping:
 		case SubjectTopo:
 		}

@@ -7,7 +7,7 @@ const ApiSubject = Object.freeze({
   SECTOR: "sector",
   ASSET : "asset",
   SIGNAL: "signal",
-  ACTION: "actopm",
+  ACTION: "action",
   MAPPING : "mapping",
   TOPO: "topo",
 })
@@ -66,6 +66,7 @@ class EmrsAction {
   constructor(header, type, data) {
     this.header = header
     this.type = type
-    this.data = data
+    this.info = data
   }
 }
+

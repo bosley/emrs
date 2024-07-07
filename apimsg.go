@@ -1,5 +1,10 @@
 package main
 
+import (
+	"emrs/core"
+	"fmt"
+)
+
 const (
 	OpAdd = "opAdd"
 	OpDel = "opDel"
@@ -18,4 +23,14 @@ type ApiMsg struct {
 	Op      string `json:op`
 	Subject string `json:subject`
 	Data    string `json:data`
+}
+
+func (m ApiMsg) String() string {
+	return fmt.Sprintf(
+		"op:%s, subject:%s, data:%s", m.Op, m.Subject, m.Data)
+}
+
+type ApiAddAsset struct {
+	Sector string     `json:sector`
+	Asset  core.Asset `json:asset`
 }

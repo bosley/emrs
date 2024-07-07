@@ -244,15 +244,15 @@ input[type=password]:active, input[type=password]:focus {
           </div>
           <div
             class="nav-tile"
-            onclick="loadTerminal()"
-            onmouseover="navControlTileHover('terminal')">
-            <img class="panel-tile-img" src="img/icons8-console-100.png">
+            onclick="loadActions()"
+            onmouseover="navControlTileHover('actions')">
+            <img class="panel-tile-img" src="img/icons8-module-100.png">
           </div>
           <div
             class="nav-tile"
-            onclick="alertNotYetDone()"
-            onmouseover="navControlTileHover('actions')">
-            <img class="panel-tile-img" src="img/icons8-gear-100.png">
+            onclick="loadTerminal()"
+            onmouseover="navControlTileHover('terminal')">
+            <img class="panel-tile-img" src="img/icons8-console-100.png">
           </div>
           <p>
           <div id="emrs_app_alerts"></div>
@@ -282,8 +282,9 @@ input[type=password]:active, input[type=password]:focus {
 
     </script>
 
-    <script src="app/table.js"></script>
     <script src="app/emrs.js"></script>
+    <script src="app/table.js"></script>
+    <script src="app/pages/actions.js"></script>
     <script src="app/pages/terminal.js"></script>
     <script src="app/pages/dashboard.js"></script>
     <script src="app/alerts.js"></script>

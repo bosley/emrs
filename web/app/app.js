@@ -4,7 +4,8 @@
 const ApplicationPage = Object.freeze({
   NONE: 0,      // For uninit case
   DASHBOARD: 1,
-  TERMINAL: 2
+  ACTIONS: 2,
+  TERMINAL: 3,
 });
 
 /*
@@ -28,8 +29,9 @@ class Application {
     this.alerts = new Alerts(ui_elements.get("alerts"))
 
     this.pages = new Map()
-    this.pages.set(ApplicationPage.DASHBOARD, new PageDashboard(this.alerts))
-    this.pages.set(ApplicationPage.TERMINAL, new PageTerminal(this.alerts))
+    this.pages.set(ApplicationPage.DASHBOARD, new PageDashboard(this.alerts, this.getTopo))
+    this.pages.set(ApplicationPage.ACTIONS, new PageAction(this.alerts, this.getTopo))
+    this.pages.set(ApplicationPage.TERMINAL, new PageTerminal(this.alerts, this.getTopo))
 
     this.content_hook = ui_elements.get("content")
 
@@ -58,11 +60,38 @@ class Application {
       ApplicationPage.DASHBOARD)
   }
 
+  getPageActions() {
+    return this.pages.get(
+      ApplicationPage.ACTIONS)
+  }
+
   getPageTerminal() {
     return this.pages.get(
       ApplicationPage.TERMINAL)
   }
 
+  getTopo() {
+    $.ajax({
+      type: "GET",
+      url: "api/topo" + getApiKeyUrlParam(),
+      dataType: 'json',
+      async: false,
+      error: ((function(obj){
+        return function(){ 
+          console.log("failed to retrieve emrs data")
+          obj.alerts.error("Failed to retrieve EMRS data")
+        }
+      })(this)),
+      success: ((function(obj){
+        return function(data){
+          obj.topo = JSON.parse(data.topo)
+          console.log("topo representation updated")
+          console.log(obj.topo)
+        }
+      })(this))
+    })
 
+    return this.topo
+  }
 }
 

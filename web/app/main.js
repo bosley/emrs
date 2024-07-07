@@ -21,6 +21,10 @@ function loadTerminal() {
   app.loadPage(ApplicationPage.TERMINAL)
 }
 
+function loadActions(){
+  app.loadPage(ApplicationPage.ACTIONS)
+}
+
 function alertNotYetDone () {
   app.alerts.error("not yet implemented")
 }

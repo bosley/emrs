@@ -60,9 +60,9 @@ type Signal struct {
 }
 
 type Action struct {
-	Header        HeaderData `json:header`
-	ExecutionType string     `json:type`
-	Data          string     `json:data`
+	Header HeaderData `json:header`
+	Type   string     `json:type`
+	Info   string     `json:info`
 }
 
 type Topo struct {
@@ -161,13 +161,15 @@ func NetworkMapFromTopo(topo Topo) (*NetworkMap, error) {
 	}
 
 	if err := forEach(topo.Actions, func(i int, x *Action) error {
+
+		slog.Debug("action", "name", x.Header.Name, "type", x.Type, "data", x.Info)
 		if mapContains(nm.actions, x.Header.Name) {
 			return NErr("Duplicate action name").
 				Push(fmt.Sprintf("Action (%s) does not have a unique name", x.Header.Name))
 		}
-		if !validActionTypes.Contains(x.ExecutionType) {
+		if !validActionTypes.Contains(x.Type) {
 			return NErr("Invalid trigger specified").
-				Push(fmt.Sprintf("Action (%s) has invalid execution type: %s", x.Header.Name, x.ExecutionType))
+				Push(fmt.Sprintf("Action (%s) has invalid execution type: %s", x.Header.Name, x.Type))
 		}
 
 		nm.actions[x.Header.Name] = x
