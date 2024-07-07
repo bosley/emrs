@@ -7,7 +7,11 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+  "errors"
+  "os/user"
+  "path/filepath"
 	"time"
+  "strings"
 )
 
 type RuntimeInfo struct {
@@ -25,6 +29,8 @@ type Config struct {
 	Runtime  RuntimeInfo `json:runtime`
 	Hosting  HostingInfo `json:hosting`
 	EmrsCore core.Config `json:core` // Consider having this be a byte array, and b64 encoding the identity before saving/ decoding before handing to core
+
+  Home string           `json:home`
 }
 
 func (cfg *Config) Validate() error {
@@ -66,8 +72,16 @@ func (cfg *Config) Validate() error {
 		slog.Info("API Keys validated against server identity")
 	}
 
-	return nil
+  if len(strings.TrimSpace(cfg.Home)) == 0 {
+    return errors.New("HOME path is empty")
+  }
 
+  if !core.PathExists(cfg.Home) {
+    slog.Error("Configured home directory does not exist", "home", cfg.Home)
+    return errors.New("HOME path specified does not exist")
+  }
+
+	return nil
 }
 
 func (c *Config) LoadTLSCert() (tls.Certificate, error) {
@@ -82,6 +96,35 @@ func (c *Config) WriteTo(path string) error {
 	return os.WriteFile(path, encoded, 0644)
 }
 
+func (c *Config) LoadActions() ([]string, error) {
+
+  actionsPath := filepath.Join(c.Home, "actions")
+
+  slog.Debug("attempting to find action files", "dir", actionsPath)
+
+  files := make([]string, 0)
+  entries, err := os.ReadDir(actionsPath)
+  if err != nil {
+    return files, err
+  }
+
+  for _, e := range entries {
+    if !e.IsDir() {
+
+      if strings.HasPrefix(e.Name(), emrsActionScriptPrefix) {
+        slog.Debug("found file", "name", e.Name())
+        files = append(files, filepath.Join(actionsPath, e.Name()))
+      } else {
+        slog.Warn("omitting non-action file in actions directory", "name", e.Name())
+      }
+    }
+
+    // have actions be action_jkansdkjansd.go to follow go convention
+  }
+  slog.Debug("done interating action files", "found", len(files))
+  return files, nil
+}
+
 func CreateConfigTemplate() *Config {
 	badge, err := badger.New(
 		badger.Config{
@@ -94,6 +137,19 @@ func CreateConfigTemplate() *Config {
 	if err != nil {
 		panic(err.Error())
 	}
+  usr, err := user.Current()
+  if err != nil {
+    panic(err.Error())
+  }
+  emrsHome := filepath.Join(usr.HomeDir, ".emrs")
+  if err := os.MkdirAll(emrsHome, os.ModePerm); err != nil {
+    panic(err.Error())
+  }
+  emrsActions := filepath.Join(emrsHome, "actions")
+  if err := os.MkdirAll(emrsActions, os.ModePerm); err != nil {
+    panic(err.Error())
+  }
+  slog.Debug("creating config", "home", emrsHome)
 	return &Config{
 		Runtime: RuntimeInfo{
 			Mode: "debug",
@@ -108,6 +164,7 @@ func CreateConfigTemplate() *Config {
 			Identity: badge.EncodeIdentityString(),
 			Network:  core.BlankTopo(),
 		},
+    Home: emrsHome,
 	}
 }
 

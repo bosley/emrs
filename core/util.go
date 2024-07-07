@@ -82,6 +82,21 @@ func LoadJSON[T any](filename string) (T, error) {
 	return data, json.Unmarshal(fileData, &data)
 }
 
+func PathExists(path string) bool {
+  exists, err := safeCheckExists(path)
+  if err != nil {
+    panic(err.Error())
+  }
+  return exists
+}
+
+func safeCheckExists(path string) (bool, error) {
+    _, err := os.Stat(path)
+    if err == nil { return true, nil }
+    if os.IsNotExist(err) { return false, nil }
+    return false, err
+}
+
 func deleteIf[V any](s []V, check func(V) bool) []V {
 	for i := 0; i < len(s); i++ {
 		if check(s[i]) {

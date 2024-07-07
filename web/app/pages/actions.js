@@ -3,6 +3,19 @@ class PageAction {
     this.alerts = alerts
     this.selected = false
     this.getTopo = getTopo
+
+/*
+    I think instead of handing data to the thing directly,
+    we should hand an emrs context. This way we can have access from one
+    object, all of the api and the data
+
+*/
+    this.default_action_body = `
+
+func Exec(data string) {
+  println("Action called upon with: ", data)
+}
+    `
   }
 
   setIdle(contentHook) {
@@ -44,17 +57,10 @@ class PageAction {
         "N/I",
         actions[i].Header.Description,
         `
-        <!-- <button class="edit-button" onclick="app.getPageActions().editAction('`+ actions[i].Header.Name +`');">Edit</button> -->
-
-
+         <button class="edit-button" onclick="app.getPageActions().editAction('`+ actions[i].Header.Name +`');">Edit</button>
          <button class="delete-button" onclick="app.getPageActions().deleteAction('`+ actions[i].Header.Name +`');">Delete</button>`,
       ])
     }
-
-    // TODO: Populate the table 
-    //
-    console.log(this.topo)
-    //
 
     $("#action-view").append(new Table(headers, content).value())
   }
@@ -65,12 +71,12 @@ class PageAction {
     $("#action-view").html(`
           <div class="row">
             <div class="column column-50" id="emrs_input_col">
-              <input placeholder="Name..." type="text" required id="emrs_name_input">
-              <textarea placeholder="Description..." id="emrs_description_input" required></textarea>
+                <input placeholder="Name..." type="text" required id="emrs_name_input" required>
+                <textarea placeholder="Description..." id="emrs_description_input" required></textarea>
             </div>
             <div class="column column-10" id="emrs_input_button_col">
               <button class="edit-button" onclick="app.getPageActions().addAction()">ADD</button>
-      <button class="edit-button" onclick="app.getPageActions().drawActionTable();"> << </button>
+              <button class="edit-button" onclick="app.getPageActions().drawActionTable();"> << </button>
             </div>
       `)
   }
@@ -88,7 +94,10 @@ class PageAction {
     let type = $("#emrs_checkbox_one_input").val()
     $("#emrs_checkbox_one_input").val('')
 
-    console.log(type)
+    let file = $("#emrs_selected_file").val()
+    $("#emrs_selected_file").val('')
+
+    console.log(file)
 
     let x = new EmrsAction(
       new EmrsHeader(name, description),
@@ -122,6 +131,12 @@ class PageAction {
         }
       })(this))
     })
+  }
+
+  editAction(name) {
+    console.log("edit", name)
+
+    
   }
 
   deleteAction(name) {

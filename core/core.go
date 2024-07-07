@@ -64,6 +64,8 @@ type Core struct {
 	procCancel context.CancelFunc
 	procWg     *sync.WaitGroup
 
+  loadActions func()[]string
+
 	metrics Metrics
 }
 
@@ -100,7 +102,7 @@ func (c *Core) GetRawTopo() Topo {
 	return c.network.ToTopo()
 }
 
-func New(config Config) (*Core, error) {
+func New(config Config, getActions func () []string ) (*Core, error) {
 
 	nm, err := NetworkMapFromTopo(config.Network)
 	if err != nil {
@@ -118,6 +120,7 @@ func New(config Config) (*Core, error) {
 		badge:          badge,
 		network:        nm,
 		actionChannels: make(map[string](chan Event)),
+    loadActions:    getActions,
 	}
 
 	core.updating.Store(false)

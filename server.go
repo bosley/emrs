@@ -14,7 +14,20 @@ import (
 
 func runServer(cfg *Config, uiEnabled bool) {
 
-	appCore, err := core.New(cfg.EmrsCore)
+  loadActions := func() []string {
+    files, err := cfg.LoadActions()
+    if err != nil {
+      slog.Error("error loading actions", "error", err.Error())
+      return []string{}
+    }
+    return files
+  }
+
+  if len(loadActions()) == 0 {
+    slog.Warn("No action files were found")
+  }
+
+	appCore, err := core.New(cfg.EmrsCore, loadActions)
 	if err != nil {
 		slog.Error("Error:%v", err)
 		panic("failed to create core")
@@ -57,6 +70,7 @@ func runServer(cfg *Config, uiEnabled bool) {
 				"KeyParam": fmt.Sprintf(
 					"?key=%s",
 					cfg.Hosting.ApiKeys[0]),
+        "Version": emrsVersion,
 			})
 		})
 
@@ -298,10 +312,9 @@ func buildApiUpdate(app *core.Core) func(*gin.Context) {
 				break
 			}
 			break
-
-		case SubjectSignal:
-		case SubjectMapping:
-		case SubjectTopo:
+		case SubjectSignal: // TODO:
+		case SubjectMapping: // TODO: map or unmap signal/action
+		case SubjectTopo: // TODO : Figure out if this is needed
 		}
 
 		topo := currentMap.ToTopo()
