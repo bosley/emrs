@@ -55,6 +55,8 @@ class PageAction {
   updateInfo() {
     this.updateTopo()
     this.updateActionsFileList()
+
+    console.log("actions.js updated actions:", this.action_files)
   }
 
   loadView() {
@@ -89,17 +91,6 @@ class PageAction {
     $("#action-view").append(new Table(headers, content).value())
   }
 
-
-
-
-
-
-
-
-
-
-
-
   loadActionEditor(action) {
 
     console.log("draw action form")
@@ -111,13 +102,46 @@ class PageAction {
     $("#action-view").html(`
           <div class="row">
             <div class="column column-50" id="emrs_input_col">
+                <label for="emrs_name_input">Name</label>
                 <input placeholder="Name..." type="text" required id="emrs_name_input" required>
+                <label for="emrs_description_input">Description</label>
                 <textarea placeholder="Description..." id="emrs_description_input" required></textarea>
             </div>
             <div class="column column-10" id="emrs_input_button_col">
               <button class="edit-button" onclick="app.getPageActions().addAction()">ADD</button>
               <button class="edit-button" onclick="app.getPageActions().loadView();"> << </button>
             </div>
+          </div>
+          <div class="row">
+            <div class="column column-50">
+            <label for="emrs_signal_selection">On signal:</label>
+            <select id="emrs_signal_selection">`)
+
+    for (let i = 0; i < this.topo.Signals.length; i++) {
+        let v = this.topo.Signals[i].Header.Name
+        $("#emrs_signal_selection").append(`
+          <option value="` + v + `">` + v + `</option>`)
+    }
+
+    $("#action-view").append(`
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="column column-50">
+            <label for="emrs_action_selection">Execute:</label>
+            <select id="emrs_action_selection">`)
+
+    for (let i = 0; i < this.action_files.length; i++) {
+        let v = this.action_files[i] 
+        $("#emrs_action_selection").append(`
+          <option value="` + v + `">` + v + `</option>`)
+    }
+
+    $("#action-view").append(`</select>
+              </select>
+            </div>
+          </div>
       `)
   }
 
@@ -134,15 +158,16 @@ class PageAction {
     let type = $("#emrs_checkbox_one_input").val()
     $("#emrs_checkbox_one_input").val('')
 
-    let file = $("#emrs_selected_file").val()
-    $("#emrs_selected_file").val('')
+    let file = $("#emrs_action_selection").val()
 
-    console.log(file)
+    let signal = $("#emrs_signal_selection").val()
+
+    console.log(file, signal)
 
     let x = new EmrsAction(
       new EmrsHeader(name, description),
       ActionType.FILE,
-      "SomeFillerText")
+      file)
 
     console.log(x)
     let msg = new ApiMsg(
@@ -170,12 +195,13 @@ class PageAction {
         }
       })(this))
     })
+
+
+    console.log("TODO: NOW WE NEED TO MAKE A SIGMAP FOR THE THING")
   }
 
   editAction(name) {
-    console.log("edit", name)
-
-    
+    console.log("TODO: NOW WE NEED TO EDIT THE ACTION")
   }
 
   deleteAction(name) {
@@ -204,6 +230,8 @@ class PageAction {
         }
       })(this))
     })
+
+    console.log("TODO: NOW WE NEED TO DELETE THE SIGMAP FOR THE THING")
   }
 
 }

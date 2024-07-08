@@ -56,7 +56,7 @@ func runServer(cfg *Config, uiEnabled bool) {
 
 	{
 		priv.GET("/", buildApi(appCore))
-		priv.POST("/update", buildApiUpdate(appCore))
+		priv.POST("/update", buildApiUpdate(appCore, cfg))
 		priv.GET("/topo", func(c *gin.Context) {
 			c.JSON(200, gin.H{
 				"topo": appCore.GetTopo(),
@@ -181,7 +181,7 @@ func buildApi(app *core.Core) func(*gin.Context) {
 	}
 }
 
-func buildApiUpdate(app *core.Core) func(*gin.Context) {
+func buildApiUpdate(app *core.Core, cfg *Config) func(*gin.Context) {
 	return func(c *gin.Context) {
 		slog.Debug("api update")
 
@@ -328,8 +328,16 @@ func buildApiUpdate(app *core.Core) func(*gin.Context) {
 		case SubjectTopo: // TODO : Figure out if this is needed
 		}
 
-		topo := currentMap.ToTopo()
+		previousTopo := cfg.EmrsCore.Network
+		revert := func() {
+			err := app.UpdateNetworkMap(previousTopo)
+			if err != nil {
+				slog.Error("Failed to revert failed topo application")
+				panic(err.Error())
+			}
+		}
 
+		topo := currentMap.ToTopo()
 		if e := app.UpdateNetworkMap(topo); e != nil {
 			slog.Error(e.Error())
 			c.JSON(400, gin.H{
@@ -337,6 +345,19 @@ func buildApiUpdate(app *core.Core) func(*gin.Context) {
 			})
 			return
 		}
+
+		cfg.EmrsCore.Network = topo
+		if err := cfg.Save(); err != nil {
+			revert()
+			c.JSON(500, gin.H{
+				"message": "failed to write config, reverted changes",
+				"reason":  err.Error(),
+			})
+			return
+		}
+
+		slog.Info("Network configuration saved to cfg file")
+
 		c.JSON(200, gin.H{"result": "complete"})
 		slog.Debug("updated", "topo", app.GetTopo())
 	}

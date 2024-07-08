@@ -1,11 +1,17 @@
 
 
 Stubbed out are multiple types of signals.
- - onEvent
+ - onEvent                  <---- Current one we use for now
  - onTimeout
- - onBumpTimeout
+ - onBumpTimeout                    The rest will be available later and triggered/scheduled by core
  - onSchedule
 
-Only the core emits signals around. The signals should be done so 
-via internal "assets" that are most likely yaegi "workers" or "actions"
-that act as assets internally
+TODO:
+
+ - in action.js when we make the action, we need to also send the signal along with the request
+    that way the system can automatically add the sigmap for the action
+
+ - setup action running /scheduling. stop runners on update, redeploy, and show the status on timer in UI
+
+ - terminal page. select active runnier, show terminal that dumps logs and setup "dev" env where the script can be fired without consequence in testing (figure out how)
+

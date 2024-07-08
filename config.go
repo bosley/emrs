@@ -31,6 +31,13 @@ type Config struct {
 	EmrsCore core.Config `json:core` // Consider having this be a byte array, and b64 encoding the identity before saving/ decoding before handing to core
 
 	Home string `json:home`
+
+	savePath string
+}
+
+func (cfg *Config) WithSavePath(s string) *Config {
+	cfg.savePath = s
+	return cfg
 }
 
 func (cfg *Config) Validate() error {
@@ -94,6 +101,10 @@ func (c *Config) WriteTo(path string) error {
 		return err
 	}
 	return os.WriteFile(path, encoded, 0644)
+}
+
+func (c *Config) Save() error {
+	return c.WriteTo(c.savePath)
 }
 
 func (c *Config) LoadActions() ([]string, error) {

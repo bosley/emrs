@@ -86,5 +86,5 @@ func loadConfig(path string, isNew bool, force bool) *Config {
 		panic("invalid configuration")
 	}
 
-	return cfg
+	return cfg.WithSavePath(path)
 }
