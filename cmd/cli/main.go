@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -92,31 +93,40 @@ func main() {
 		return
 	}
 
-  cfg := getConfig(*emrsHome)
+	cfg := getConfig(*emrsHome)
 
-  println(cfg.Identity)
+	badge, err := badger.DecodeIdentityString(cfg.Identity)
+	if err != nil {
+		slog.Error("badger failed to decode server identity", "error", err.Error())
+		os.Exit(1)
+	}
 
 	emrs := app.New(&app.Opts{
-		Binding: "127.0.0.1:8080",
+		Badge:   badge,
+		Binding: cfg.Binding,
 	})
+
+	if strings.Trim(cfg.Key, " ") != "" && strings.Trim(cfg.Cert, " ") != "" {
+		emrs.UseHttps(cfg.Key, cfg.Cert)
+	}
 
 	emrs.Run()
 }
 
 func getConfig(home string) Config {
-  var config Config 
-  target, err := os.ReadFile(filepath.Join(home, defaultConfigName))
-  if err != nil {
-    slog.Error("failed to load config", "error", err.Error())
-    os.Exit(1)
-  }
-  err = yaml.Unmarshal(target, &config)
-  if err != nil {
-    slog.Error("failed to load config", "error", err.Error())
-    os.Exit(1)
-  }
-  slog.Debug("loaded config", "binding", config.Binding, "key", config.Key, "cert", config.Cert)
-  return config
+	var config Config
+	target, err := os.ReadFile(filepath.Join(home, defaultConfigName))
+	if err != nil {
+		slog.Error("failed to load config", "error", err.Error())
+		os.Exit(1)
+	}
+	err = yaml.Unmarshal(target, &config)
+	if err != nil {
+		slog.Error("failed to load config", "error", err.Error())
+		os.Exit(1)
+	}
+	slog.Debug("loaded config", "binding", config.Binding, "key", config.Key, "cert", config.Cert)
+	return config
 }
 
 func writeNewEmrs(home string, force bool, noHelp bool) {

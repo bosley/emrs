@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"github.com/bosley/emrs/badger"
 	"io"
 	"log/slog"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 )
 
 type Opts struct {
+	Badge   badger.Badge
 	Binding string
 }
 
@@ -20,6 +22,7 @@ type httpsInfo struct {
 
 type App struct {
 	binding string
+	badge   badger.Badge
 
 	httpsSettings *httpsInfo // nil if not using https
 }
@@ -27,15 +30,15 @@ type App struct {
 func New(options *Opts) *App {
 	return &App{
 		binding: options.Binding,
+		badge:   options.Badge,
 	}
 }
 
-func (a *App) WithHttps(keyPath string, certPath string) *App {
+func (a *App) UseHttps(keyPath string, certPath string) {
 	a.httpsSettings = &httpsInfo{
 		keyPath:  keyPath,
 		certPath: certPath,
 	}
-	return a
 }
 
 func (a *App) Run() {
