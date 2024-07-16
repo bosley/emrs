@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bosley/emrs/badger"
+	"github.com/bosley/emrs/datastore"
 	"io"
 	"log/slog"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 type Opts struct {
 	Badge   badger.Badge
 	Binding string
+  DataStore *datastore.Ds
 }
 
 type httpsInfo struct {
@@ -23,6 +25,7 @@ type httpsInfo struct {
 type App struct {
 	binding string
 	badge   badger.Badge
+  db      *datastore.Ds
 
 	httpsSettings *httpsInfo // nil if not using https
 }
@@ -31,6 +34,7 @@ func New(options *Opts) *App {
 	return &App{
 		binding: options.Binding,
 		badge:   options.Badge,
+    db:      options.DataStore,
 	}
 }
 

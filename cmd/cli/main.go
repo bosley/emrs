@@ -4,11 +4,14 @@ import (
 	"flag"
 	"github.com/bosley/emrs/app"
 	"github.com/bosley/emrs/badger"
+	"github.com/bosley/emrs/datastore"
 	"gopkg.in/yaml.v3"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
 )
 
 const (
@@ -56,6 +59,7 @@ func main() {
 
 	     --count    Range: 1-50, to generate many keus
 
+
 	     --json    Dump in json format
 
 	     [ emrs --api-key --duration 1h --count --json 10 >> keys.json ]
@@ -101,9 +105,15 @@ func main() {
 		os.Exit(1)
 	}
 
+  dataStrj, err := datastore.Load(filepath.Join(*emrsHome, defaultStoragePath))
+  if err != nil {
+    slog.Error("failed to load datastore", "error", err.Error())
+  }
+
 	emrs := app.New(&app.Opts{
 		Badge:   badge,
 		Binding: cfg.Binding,
+    DataStore: dataStrj,
 	})
 
 	if strings.Trim(cfg.Key, " ") != "" && strings.Trim(cfg.Cert, " ") != "" {
@@ -133,6 +143,8 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
 
 	slog.Info("creating new emrs instance", "home", home, "force", force)
 
+	newUser := RunUserInfoTui()
+
 	badge, berr := badger.New(defaultServerName)
 	if berr != nil {
 		slog.Error("badger failed to produce a new identity")
@@ -157,7 +169,26 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
 		}
 	}
 
-	os.MkdirAll(filepath.Join(home, defaultStoragePath), 0755)
+	strj := filepath.Join(home, defaultStoragePath)
+	os.MkdirAll(strj, 0755)
+
+	oneYear, err := time.ParseDuration("8760h")
+	if err != nil {
+		slog.Error("failed to setup voucher duration")
+		os.Exit(1)
+	}
+
+	voucher, err := badger.NewVoucher(badge, oneYear)
+	if err != nil {
+		slog.Error("failed to generate ui voucher")
+		os.Exit(1)
+	}
+
+	datastore.SetupDisk(strj, datastore.User{
+		DisplayName: newUser.Name,
+		Hash:        newUser.Hash,
+		UiKey:       voucher, // 1 year
+	})
 
 	cfg := Config{
 		Binding:  defaultBinding,
