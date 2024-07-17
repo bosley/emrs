@@ -44,21 +44,16 @@ type EncodedIdentity struct {
 }
 
 func New(nickname string) (Badge, error) {
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		return nil, err
-	}
-	return &identity{
+
+  id, err := GenerateId()
+  if err != nil {
+    return nil, err
+  }
+
+  return &identity{
 		nickname: nickname,
 		key:      generateKeyPair(),
-		uid: fmt.Sprintf(
-			"%x-%x-%x-%x-%x",
-			b[0:4],
-			b[4:6],
-			b[6:8],
-			b[8:10],
-			b[10:]),
+    uid: id,
 	}, nil
 }
 
@@ -66,6 +61,21 @@ func zeroArr(raw []byte) {
 	for i := 0; i < len(raw); i++ {
 		raw[i] = 0
 	}
+}
+
+func GenerateId() (string, error) {
+  b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(
+			"%x-%x-%x-%x-%x",
+			b[0:4],
+			b[4:6],
+			b[6:8],
+			b[8:10],
+			b[10:]), nil
 }
 
 func RawIsHashMatch(raw []byte, hashed []byte) error {

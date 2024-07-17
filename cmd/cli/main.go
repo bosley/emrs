@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
 	"github.com/bosley/emrs/app"
 	"github.com/bosley/emrs/badger"
 	"github.com/bosley/emrs/datastore"
@@ -11,16 +13,17 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
 )
 
 const (
-	defaultServerName  = "EMRS Server"
-	defaultEnvHome     = "EMRS_HOME"
-	defaultBinding     = "127.0.0.1:8080"
-	defaultStoragePath = "storage"
-	defaultRuntimeFile = ".emrs.pid"
-	defaultConfigName  = "server.cfg"
+	defaultServerName        = "EMRS Server"
+	defaultEnvHome           = "EMRS_HOME"
+	defaultBinding           = "127.0.0.1:8080"
+	defaultStoragePath       = "storage"
+	defaultRuntimeFile       = ".emrs.pid"
+	defaultConfigName        = "server.cfg"
+	defaultUiKeyDuration     = "8760h" // 1 year
+	defaultUserGivenDuration = "4320h" // ~6 months
 )
 
 type Config struct {
@@ -33,55 +36,53 @@ type Config struct {
 func main() {
 
 	/*
-	   to launch emrs
+		    TODO:
+		        CLI Args that would be nice, and potentially required, but not required as-of-yet:
 
-	   if not installed:
+		        --new-ui-key    (uses givenDuration)    Generates a new UI key for the Ring-0 user,
+		                                                this will require a sever restart, or a means
+		                                                to update the api auth used by the server at runtime.
+		                                                This might be a non-issue but since the auth is not
+		                                                implemented yet, it may require change later idk
 
-	    emrs --new [path/to/install]
+		        --health        Check to see if there is a currently running EMRS instance
+		        --down          Kill a currently running emrs instance (could use PID, could locally-bound port
+		                        and a "local-machine" api to do the IPC between a cli instance and a running server
 
-	    <Set EMRS_HOME to this install to launch later with just "emrs">
-
-	    Or don't and use this:
-
-	    emrs --home [path/to/different/install]
-
-
-	   --health      if EMRS_HOME is defined in ENV --home can be omitted
-	     check to see if the server is alive, and get status
-
-
-	   --import [import/assets.yaml] | /some_db_info_to_install.yaml
-
-
-	   --api-key     generates an API key, no duration sets to some default (6 months?)
-
-	     --duration    5h30m40s format for  time.ParseDuration
-
-	     --count    Range: 1-50, to generate many keus
-
-
-	     --json    Dump in json format
-
-	     [ emrs --api-key --duration 1h --count --json 10 >> keys.json ]
-
-	           "vouchers": [
-	             "",
-	             "",
-	           ]
-
-
-	   --remove-key <KEY VALUE>
-
-	               invalidates an api key
-
+		        --disable       Disable all running functionality (submisisons to server, ui, etc)
+		                        This could be useful for testing.
 	*/
 
 	emrsHome := flag.String("home", "", "Home directory")
 	createNew := flag.Bool("new", false, "Create a new EMRS instance")
 	useForce := flag.Bool("force", false, "Force \"new\" operation, no prompting if item exists")
 	coolGuy := flag.Bool("no-prompt", false, "Don't try to be helpful during setup")
+	isRelease := flag.Bool("release", false, "Enable release mode")
+	genVouchers := flag.Int("vouchers", 0, "Enter a number >0 to generate a series of vouchers. Use with `duration.`")
+	givenDuration := flag.String("duration", defaultUserGivenDuration, "Duration to give to vouchers (ex: 1h15m)")
+
+
+  createAsset := flag.String("new-asset", "", "Create a new asset")
+  listAssets  := flag.Bool("list-assets", false, "List all known assets")
+  removeAsset := flag.String("remove-asset", "", "Remove an asset by its UUID")
+  updateAsset := flag.String("update-asset", "", "Update an asset's name given its UUID (requires --name)")
+
+  withName:= flag.String("name", "", "Set the name value for a corresponding command")
+
+  // beFancy := flag.Bool("fancy", false, "Perform the action with a fancy tui") // (list assets, using bubbletea)
+
+  // panel  := flag.Bool("panel", false, "Launch the interactive TUI that requires direct access to the datastore (not via web api)
 
 	flag.Parse()
+
+  if !*isRelease {
+	  slog.SetDefault(
+	  	slog.New(
+	  		slog.NewTextHandler(os.Stdout,
+	  			&slog.HandlerOptions{
+	  				Level: slog.LevelDebug,
+	  			})))
+      }
 
 	if *emrsHome == "" {
 		fromEnv := os.Getenv(defaultEnvHome)
@@ -92,35 +93,105 @@ func main() {
 		*emrsHome = fromEnv
 	}
 
+  // Create a new EMRS instance on disk, and then exit
 	if *createNew {
 		writeNewEmrs(*emrsHome, *useForce, *coolGuy)
 		return
 	}
 
-	cfg := getConfig(*emrsHome)
+  // Load the configuration, and then populate the server identity badge
 
+	cfg := getConfig(*emrsHome)
 	badge, err := badger.DecodeIdentityString(cfg.Identity)
 	if err != nil {
 		slog.Error("badger failed to decode server identity", "error", err.Error())
 		os.Exit(1)
 	}
 
-  dataStrj, err := datastore.Load(filepath.Join(*emrsHome, defaultStoragePath))
-  if err != nil {
-    slog.Error("failed to load datastore", "error", err.Error())
+  // If the user wants to generate vouchers based on the server identity,
+  // we do so here and then exist
+
+	if *genVouchers > 0 {
+		d, err := time.ParseDuration(*givenDuration)
+		if err != nil {
+			slog.Error("failed to parse duration", "error", err.Error())
+			os.Exit(1)
+		}
+		generateVouchers(badge, *genVouchers, d)
+		return
+	}
+
+  // Load the DataStore from the EMRS home directory
+
+	dataStrj, err := datastore.Load(filepath.Join(*emrsHome, defaultStoragePath))
+	if err != nil {
+		slog.Error("failed to load datastore", "error", err.Error())
+		os.Exit(1)
+	}
+
+  // Check for asset commands
+
+  if *listAssets {
+    assets := dataStrj.GetAssets()
+    if len(assets) == 0 {
+      fmt.Println("There are no assets contained in the EMRS data storage system")
+      return
+    }
+    for i, a := range assets {
+      fmt.Printf("%6d | %s | %s\n", i, a.Id, a.DisplayName)
+    }
+    return
+  }
+  if strings.Trim(*createAsset, " ") != "" {
+    id, err := badger.GenerateId()
+    if err != nil {
+      slog.Error("badger failed to create a unique id for asset", "error", err.Error())
+      os.Exit(1)
+    }
+    if !dataStrj.AddAsset(datastore.Asset{
+      Id: id,
+      DisplayName: *createAsset,
+    }) {
+      slog.Error("failed to add asset", "id", id, "name", *createAsset)
+      os.Exit(1)
+    }
+    return
+  }
+  if strings.Trim(*removeAsset, " ") != "" {
+    if !dataStrj.RemoveAsset(*removeAsset) {
+      slog.Error("failed to remove asset", "id", *removeAsset)
+      os.Exit(1)
+    }
+    return
+  }
+  if strings.Trim(*updateAsset, " ") != "" {
+    if !dataStrj.UpdateAsset(datastore.Asset{
+      Id: *updateAsset,
+      DisplayName: *withName,
+    }) {
+      slog.Error("failed to add asset", "id", *updateAsset, "name", *withName)
+      os.Exit(1)
+    }
+    return
   }
 
+  // Create the EMRS server application 
+
 	emrs := app.New(&app.Opts{
-		Badge:   badge,
-		Binding: cfg.Binding,
-    DataStore: dataStrj,
+		Badge:     badge,
+		Binding:   cfg.Binding,
+		DataStore: dataStrj,
 	})
+
+  // Check if we can use HTTPS
 
 	if strings.Trim(cfg.Key, " ") != "" && strings.Trim(cfg.Cert, " ") != "" {
 		emrs.UseHttps(cfg.Key, cfg.Cert)
 	}
 
-	emrs.Run()
+  // RUN
+
+	emrs.Run(*isRelease)
 }
 
 func getConfig(home string) Config {
@@ -172,7 +243,7 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
 	strj := filepath.Join(home, defaultStoragePath)
 	os.MkdirAll(strj, 0755)
 
-	oneYear, err := time.ParseDuration("8760h")
+	oneYear, err := time.ParseDuration(defaultUiKeyDuration)
 	if err != nil {
 		slog.Error("failed to setup voucher duration")
 		os.Exit(1)
@@ -238,4 +309,19 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
     `)
 	}
 	os.Exit(0)
+}
+
+func generateVouchers(badge badger.Badge, n int, durr time.Duration) {
+	vouchers := make([]string, n)
+	for i := range n {
+		voucher, err := badger.NewVoucher(badge, durr)
+		if err != nil {
+			slog.Error("failed to generate vouchers")
+			os.Exit(1)
+		}
+		vouchers[i] = voucher
+	}
+
+	b, _ := json.Marshal(vouchers)
+	fmt.Println(string(b))
 }

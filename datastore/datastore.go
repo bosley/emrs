@@ -19,6 +19,19 @@ const (
 	RingTwo          // Optional for later addition of non-owner users
 )
 
+type DataStore interface {
+	AddAsset(asset Asset) bool
+	GetAssets() []Asset
+	UpdateAsset(asset Asset) bool
+	RemoveAsset(id string) bool
+
+	GetOwner() (User, error)
+	UpdateOwner(owner User) bool
+	UpdateOwnerUiKey(key string) bool
+
+	Close()
+}
+
 type User struct {
 	DisplayName string `clover:"displayname"`
 	Hash        string `clover:"hash"`
@@ -26,12 +39,36 @@ type User struct {
 	Ring        int    `clover:"ring"`
 }
 
-type Ds struct {
-	users  *c.DB
-	assets *c.DB
+func (u User) ToDoc() *d.Document {
+	doc := d.NewDocument()
+	doc.Set("displayname", u.DisplayName)
+	doc.Set("hash", u.Hash)
+	doc.Set("uikey", u.UiKey)
+	doc.Set("ring", u.Ring)
+	return doc
 }
 
-func Load(location string) (*Ds, error) {
+type Asset struct {
+	Id          string `clover:"id"`
+	DisplayName string `clover:"displayname"`
+}
+
+func (a Asset) ToDoc() *d.Document {
+	doc := d.NewDocument()
+	doc.Set("id", a.Id)
+	doc.Set("displayname", a.DisplayName)
+	return doc
+}
+
+// TODO: Loading, Setup and everything else below
+// should be baked into the storage object, or
+// whatever backend is selected.
+//
+//  This means that the ToDoc functions and the clover
+//    tags should be removed from the user and asset objects
+//      this will loosen the coupling
+
+func Load(location string) (DataStore, error) {
 
 	u, err := c.Open(filepath.Join(location, usersDb))
 	if err != nil {
@@ -43,15 +80,10 @@ func Load(location string) (*Ds, error) {
 		return nil, err
 	}
 
-	return &Ds{
+	return &storage{
 		users:  u,
 		assets: a,
 	}, nil
-}
-
-func (ds *Ds) Close() {
-	ds.users.Close()
-	ds.assets.Close()
 }
 
 func SetupDisk(location string, user User) {
@@ -105,19 +137,10 @@ func createCollection(name string, path string) error {
 	defer db.Close()
 
 	if db == nil {
-		panic("yep, it nil boss")
+		panic("failed to create new database (internal error)")
 	}
 
 	db.CreateCollection(name)
 
 	return nil
-}
-
-func (u User) ToDoc() *d.Document {
-	doc := d.NewDocument()
-	doc.Set("displayname", u.DisplayName)
-	doc.Set("hash", u.Hash)
-	doc.Set("uikey", u.UiKey)
-	doc.Set("ring", u.Ring)
-	return doc
 }

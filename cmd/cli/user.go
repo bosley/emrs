@@ -1,17 +1,16 @@
 package main
 
 import (
-	"github.com/bosley/emrs/badger"
-	"log/slog"
-  "strings"
-  "os"
 	"fmt"
+	"github.com/bosley/emrs/badger"
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"log/slog"
+	"os"
+	"strings"
 )
-
 
 type UserInfo struct {
 	Name     string
@@ -219,5 +218,4 @@ func RunUserInfoTui() UserInfo {
 		Hash:     string(p0),
 		Identity: GenerateIdentity(username),
 	}
-
 }
