@@ -62,7 +62,7 @@ func (a *App) CNCAuthentication() gin.HandlerFunc {
 		// TODO:
 		//
 		//      Retrieve cnc key from the request, and match
-		//      it against the one that we have stored in the DB.
+		//      it against the one that we have stored in the DB. (different auth than the other endpoints)
 		//
 		//      Reminder: on startup we should identify if the voucher is still good (in addition to each request)
 		//      as it might have expired

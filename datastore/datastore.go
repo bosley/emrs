@@ -24,6 +24,7 @@ type DataStore interface {
 	GetAssets() []Asset
 	UpdateAsset(asset Asset) bool
 	RemoveAsset(id string) bool
+	AssetExists(id string) bool
 
 	GetOwner() (User, error)
 	UpdateOwner(owner User) bool

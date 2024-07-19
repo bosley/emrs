@@ -8,7 +8,10 @@ replace github.com/bosley/emrs/app => ../../app
 
 replace github.com/bosley/emrs/datastore => ../../datastore
 
+replace github.com/bosley/emrs/api => ../../api
+
 require (
+	github.com/bosley/emrs/api v0.0.0-00010101000000-000000000000
 	github.com/bosley/emrs/app v0.0.0-00010101000000-000000000000
 	github.com/bosley/emrs/badger v0.0.0-00010101000000-000000000000
 	github.com/bosley/emrs/datastore v0.0.0-00010101000000-000000000000

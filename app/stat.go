@@ -14,6 +14,7 @@ package app
 
 import (
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
 func (a *App) setupStat(gins *gin.Engine) {
@@ -24,6 +25,6 @@ func (a *App) setupStat(gins *gin.Engine) {
 
 func (a *App) statRoot(c *gin.Context) {
 	c.JSON(200, gin.H{
-		"status": "under construction",
+		"uptime": time.Since(a.started).Truncate(time.Second),
 	})
 }

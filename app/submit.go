@@ -11,7 +11,10 @@ package app
 */
 
 import (
+	"bytes"
 	"github.com/gin-gonic/gin"
+	"log/slog"
+	"net/http"
 )
 
 func (a *App) setupSubmit(gins *gin.Engine) {
@@ -24,23 +27,54 @@ func (a *App) setupSubmit(gins *gin.Engine) {
 func (a *App) SubmitAuthentication() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		// TODO:
-		//
-		//      Retrieve voucher from the request and validate it against the
-		//      server identity
-		//
-		//
-		//        For now, loading and checking every time will be fine, but eventually
-		//        checking the voucher once, storing its hash in a map, and then making
-		//        a timed callback to remove the item the moment it would expire,
-		//        may give a performance gain.
-		//            For now though, its a debt we can take because it doesn't matter yet
-		//
-		//
+		token := c.GetHeader("token")
+		origin := c.GetHeader("origin")
+
+		if err := a.validateRequest(origin, token); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  "bad request",
+				"message": err.Error(),
+			})
+			c.Abort()
+			return
+		}
+		slog.Debug("origin validated", "origin", origin)
 	}
 }
 
 func (a *App) submitEvent(c *gin.Context) {
+
+	slog.Debug("EVENT SUBMITTED", "body", c.Request.Body)
+
+	route := c.GetHeader("route")
+
+	data := new(bytes.Buffer)
+	data.ReadFrom(c.Request.Body)
+
+	slog.Info("event submission request", "route", route, "body", data)
+
+	println(`
+
+
+
+      TODO: 
+
+          This is not yet completed.
+
+          The request has been authorized, but needs to be executed.
+
+
+          We need to setup the event system that takes the given "route" and passes the "data"
+
+          The first item in the route (which we have yet to decompose/ validate) must be an ingestion
+          node. This node will define and populate the data type that the trailered nodes will process
+          based on the data handed to us by the user (if any)
+
+
+
+
+  `)
+
 	c.JSON(200, gin.H{
 		"status": "under construction",
 	})

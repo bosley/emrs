@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 )
 
 type Opts struct {
@@ -25,6 +27,7 @@ type App struct {
 	binding string
 	badge   badger.Badge
 	db      datastore.DataStore
+	started time.Time
 
 	httpsSettings *httpsInfo // nil if not using https
 }
@@ -47,6 +50,7 @@ func (a *App) UseHttps(keyPath string, certPath string) {
 func (a *App) Run(enableReleaseMode bool) {
 
 	slog.Info("Application starting", "binding", a.binding)
+	a.started = time.Now()
 
 	if enableReleaseMode {
 		slog.Info("Release mode enabled")
@@ -97,4 +101,34 @@ func (a *App) Run(enableReleaseMode bool) {
 		slog.Error("error starting the server", "error", err.Error())
 		os.Exit(1)
 	}
+}
+
+// All HTTP requests come with two pieces of information to validate them
+// and permit the request:
+//
+//	origin:     The Asset id of the thing submitting data that must
+//	            be known by the server
+//	token:      A badger voucher that must be valid
+func (a *App) validateRequest(origin string, token string) error {
+
+	slog.Debug("validate request", "origin", origin, "token", token)
+
+	if strings.TrimSpace(origin) == "" {
+		return errors.New("invalid origin data")
+	}
+
+	if strings.TrimSpace(token) == "" {
+		return errors.New("invalid token data")
+	}
+
+	if !a.db.AssetExists(origin) {
+		slog.Error("unknown originating asset given in header", "origin", origin)
+		return errors.New("unknown asset")
+	}
+
+	if !a.badge.ValidateVoucher(token) {
+		return errors.New("invalid token")
+	}
+
+	return nil
 }

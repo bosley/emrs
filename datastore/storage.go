@@ -17,6 +17,18 @@ func (ds *storage) Close() {
 	ds.assets.Close()
 }
 
+func (ds *storage) AssetExists(id string) bool {
+	results, err := ds.assets.FindAll(query.NewQuery(assetDb).Where(query.Field("id").Eq(id)))
+	if err != nil {
+		slog.Error("error arose while attempting to find asset", "id", id, "error", err.Error())
+		return false
+	}
+	if len(results) == 0 {
+		return false
+	}
+	return true
+}
+
 func (ds *storage) AddAsset(asset Asset) bool {
 
 	results, err := ds.assets.FindAll(query.NewQuery(assetDb).Where(query.Field("id").Eq(asset.Id)))
@@ -98,6 +110,8 @@ func (ds *storage) GetAssets() []Asset {
 
 func (ds *storage) UpdateOwnerUiKey(key string) bool {
 
+	slog.Warn("THIS IS ENTIRELY UNTESTED")
+
 	x := make(map[string]interface{})
 	x["uikey"] = key
 
@@ -110,6 +124,8 @@ func (ds *storage) UpdateOwnerUiKey(key string) bool {
 }
 
 func (ds *storage) GetOwner() (User, error) {
+
+	slog.Warn("THIS IS ENTIRELY UNTESTED")
 
 	docs, err := ds.users.FindAll(query.NewQuery(usersDb).Where(query.Field("ring").Eq(RingOne)))
 	if err != nil {
@@ -129,6 +145,8 @@ func (ds *storage) GetOwner() (User, error) {
 }
 
 func (ds *storage) UpdateOwner(owner User) bool {
+
+	slog.Warn("THIS IS ENTIRELY UNTESTED")
 
 	docs, err := ds.users.FindAll(query.NewQuery(usersDb).Where(query.Field("ring").Eq(RingOne)))
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/bosley/emrs/api"
 	"github.com/bosley/emrs/app"
 	"github.com/bosley/emrs/badger"
 	"github.com/bosley/emrs/datastore"
@@ -26,6 +27,10 @@ const (
 	defaultUserGivenDuration = "4320h" // ~6 months
 )
 
+const (
+	ttlEphemeralVoucher = "30s"
+)
+
 type Config struct {
 	Binding  string `yaml:binding`
 	Key      string `yaml:key`
@@ -36,21 +41,21 @@ type Config struct {
 func main() {
 
 	/*
-		    TODO:
-		        CLI Args that would be nice, and potentially required, but not required as-of-yet:
+	   TODO:
+	       CLI Args that would be nice, and potentially required, but not required as-of-yet:
 
-		        --new-ui-key    (uses givenDuration)    Generates a new UI key for the Ring-0 user,
-		                                                this will require a sever restart, or a means
-		                                                to update the api auth used by the server at runtime.
-		                                                This might be a non-issue but since the auth is not
-		                                                implemented yet, it may require change later idk
+	       --new-ui-key    (uses givenDuration)    Generates a new UI key for the Ring-0 user,
+	                                               this will require a sever restart, or a means
+	                                               to update the api auth used by the server at runtime.
+	                                               This might be a non-issue but since the auth is not
+	                                               implemented yet, it may require change later idk
 
-		        --health        Check to see if there is a currently running EMRS instance
-		        --down          Kill a currently running emrs instance (could use PID, could locally-bound port
-		                        and a "local-machine" api to do the IPC between a cli instance and a running server
+	       --getStatus        Check to see if there is a currently running EMRS instance
+	       --down          Kill a currently running emrs instance (could use PID, could locally-bound port
+	                       and a "local-machine" api to do the IPC between a cli instance and a running server
 
-		        --disable       Disable all running functionality (submisisons to server, ui, etc)
-		                        This could be useful for testing.
+	       --disable       Disable all running functionality (submisisons to server, ui, etc)
+	                       This could be useful for testing.
 	*/
 
 	emrsHome := flag.String("home", "", "Home directory")
@@ -61,28 +66,31 @@ func main() {
 	genVouchers := flag.Int("vouchers", 0, "Enter a number >0 to generate a series of vouchers. Use with `duration.`")
 	givenDuration := flag.String("duration", defaultUserGivenDuration, "Duration to give to vouchers (ex: 1h15m)")
 
+	createAsset := flag.String("new-asset", "", "Create a new asset")
+	listAssets := flag.Bool("list-assets", false, "List all known assets")
+	removeAsset := flag.String("remove-asset", "", "Remove an asset by its UUID")
+	updateAsset := flag.String("update-asset", "", "Update an asset's name given its UUID (requires --name)")
 
-  createAsset := flag.String("new-asset", "", "Create a new asset")
-  listAssets  := flag.Bool("list-assets", false, "List all known assets")
-  removeAsset := flag.String("remove-asset", "", "Remove an asset by its UUID")
-  updateAsset := flag.String("update-asset", "", "Update an asset's name given its UUID (requires --name)")
+	withName := flag.String("name", "", "Set the name value for a corresponding command")
 
-  withName:= flag.String("name", "", "Set the name value for a corresponding command")
+  emit := flag.String("submit", "", "Submit event to a server. Format>  Asset-UUID:deceoder.proc0.proc1.proc2@https://127.0.0.1:8080")
+	withData := flag.String("data", "", "Add data to a submission")
 
-  // beFancy := flag.Bool("fancy", false, "Perform the action with a fancy tui") // (list assets, using bubbletea)
+  getStatus := flag.String("stat", "", "Submit getStatus reaquest to server Format> https://127.0.0.1:8080")
+	// beFancy := flag.Bool("fancy", false, "Perform the action with a fancy tui") // (list assets, using bubbletea)
 
-  // panel  := flag.Bool("panel", false, "Launch the interactive TUI that requires direct access to the datastore (not via web api)
+	// panel  := flag.Bool("panel", false, "Launch the interactive TUI that requires direct access to the datastore (not via web api)
 
 	flag.Parse()
 
-  if !*isRelease {
-	  slog.SetDefault(
-	  	slog.New(
-	  		slog.NewTextHandler(os.Stdout,
-	  			&slog.HandlerOptions{
-	  				Level: slog.LevelDebug,
-	  			})))
-      }
+	if !*isRelease {
+		slog.SetDefault(
+			slog.New(
+				slog.NewTextHandler(os.Stdout,
+					&slog.HandlerOptions{
+						Level: slog.LevelDebug,
+					})))
+	}
 
 	if *emrsHome == "" {
 		fromEnv := os.Getenv(defaultEnvHome)
@@ -93,13 +101,13 @@ func main() {
 		*emrsHome = fromEnv
 	}
 
-  // Create a new EMRS instance on disk, and then exit
+	// Create a new EMRS instance on disk, and then exit
 	if *createNew {
 		writeNewEmrs(*emrsHome, *useForce, *coolGuy)
 		return
 	}
 
-  // Load the configuration, and then populate the server identity badge
+	// Load the configuration, and then populate the server identity badge
 
 	cfg := getConfig(*emrsHome)
 	badge, err := badger.DecodeIdentityString(cfg.Identity)
@@ -108,8 +116,20 @@ func main() {
 		os.Exit(1)
 	}
 
-  // If the user wants to generate vouchers based on the server identity,
-  // we do so here and then exist
+  if *getStatus != "" {
+    executeGetStatus(*getStatus, cfg)
+    return
+  }
+
+	// Check to see if we are just emitting an event
+
+	if *emit != "" {
+		executeSubmission(badge, cfg, *emit, *withData)
+		return
+	}
+
+	// If the user wants to generate vouchers based on the server identity,
+	// we do so here and then exist
 
 	if *genVouchers > 0 {
 		d, err := time.ParseDuration(*givenDuration)
@@ -121,7 +141,7 @@ func main() {
 		return
 	}
 
-  // Load the DataStore from the EMRS home directory
+	// Load the DataStore from the EMRS home directory
 
 	dataStrj, err := datastore.Load(filepath.Join(*emrsHome, defaultStoragePath))
 	if err != nil {
@@ -129,53 +149,53 @@ func main() {
 		os.Exit(1)
 	}
 
-  // Check for asset commands
+	// Check for asset commands
 
-  if *listAssets {
-    assets := dataStrj.GetAssets()
-    if len(assets) == 0 {
-      fmt.Println("There are no assets contained in the EMRS data storage system")
-      return
-    }
-    for i, a := range assets {
-      fmt.Printf("%6d | %s | %s\n", i, a.Id, a.DisplayName)
-    }
-    return
-  }
-  if strings.Trim(*createAsset, " ") != "" {
-    id, err := badger.GenerateId()
-    if err != nil {
-      slog.Error("badger failed to create a unique id for asset", "error", err.Error())
-      os.Exit(1)
-    }
-    if !dataStrj.AddAsset(datastore.Asset{
-      Id: id,
-      DisplayName: *createAsset,
-    }) {
-      slog.Error("failed to add asset", "id", id, "name", *createAsset)
-      os.Exit(1)
-    }
-    return
-  }
-  if strings.Trim(*removeAsset, " ") != "" {
-    if !dataStrj.RemoveAsset(*removeAsset) {
-      slog.Error("failed to remove asset", "id", *removeAsset)
-      os.Exit(1)
-    }
-    return
-  }
-  if strings.Trim(*updateAsset, " ") != "" {
-    if !dataStrj.UpdateAsset(datastore.Asset{
-      Id: *updateAsset,
-      DisplayName: *withName,
-    }) {
-      slog.Error("failed to add asset", "id", *updateAsset, "name", *withName)
-      os.Exit(1)
-    }
-    return
-  }
+	if *listAssets {
+		assets := dataStrj.GetAssets()
+		if len(assets) == 0 {
+			fmt.Println("There are no assets contained in the EMRS data storage system")
+			return
+		}
+		for i, a := range assets {
+			fmt.Printf("%6d | %s | %s\n", i, a.Id, a.DisplayName)
+		}
+		return
+	}
+	if strings.Trim(*createAsset, " ") != "" {
+		id, err := badger.GenerateId()
+		if err != nil {
+			slog.Error("badger failed to create a unique id for asset", "error", err.Error())
+			os.Exit(1)
+		}
+		if !dataStrj.AddAsset(datastore.Asset{
+			Id:          id,
+			DisplayName: *createAsset,
+		}) {
+			slog.Error("failed to add asset", "id", id, "name", *createAsset)
+			os.Exit(1)
+		}
+		return
+	}
+	if strings.Trim(*removeAsset, " ") != "" {
+		if !dataStrj.RemoveAsset(*removeAsset) {
+			slog.Error("failed to remove asset", "id", *removeAsset)
+			os.Exit(1)
+		}
+		return
+	}
+	if strings.Trim(*updateAsset, " ") != "" {
+		if !dataStrj.UpdateAsset(datastore.Asset{
+			Id:          *updateAsset,
+			DisplayName: *withName,
+		}) {
+			slog.Error("failed to add asset", "id", *updateAsset, "name", *withName)
+			os.Exit(1)
+		}
+		return
+	}
 
-  // Create the EMRS server application 
+	// Create the EMRS server application
 
 	emrs := app.New(&app.Opts{
 		Badge:     badge,
@@ -183,13 +203,13 @@ func main() {
 		DataStore: dataStrj,
 	})
 
-  // Check if we can use HTTPS
+	// Check if we can use HTTPS
 
 	if strings.Trim(cfg.Key, " ") != "" && strings.Trim(cfg.Cert, " ") != "" {
 		emrs.UseHttps(cfg.Key, cfg.Cert)
 	}
 
-  // RUN
+	// RUN
 
 	emrs.Run(*isRelease)
 }
@@ -324,4 +344,86 @@ func generateVouchers(badge badger.Badge, n int, durr time.Duration) {
 
 	b, _ := json.Marshal(vouchers)
 	fmt.Println(string(b))
+}
+
+// Takes in the server's badge, user-supplied url and data (optional)
+// and submits an event to the targeted EMRS server.
+// The badge is utilized to generate a very short-lived voucher
+// (30 sec) for each request. Whats important to realize is that we
+// are using the local server's identity, meaning that this will
+// only be valid for the local EMRS instance, and not any others
+// unless they share the same identity
+func executeSubmission(badge badger.Badge, cfg Config, url string, data string) {
+
+	slog.Debug("submission execution request", "url", url, "data", data)
+
+	emrsUrl := new(api.EmrsAddress)
+
+	if err := emrsUrl.From(url); err != nil {
+		slog.Error("failed to parse url", "error", err.Error())
+		fmt.Println("Malformed URL given. Proper format>   ASSET_ID:PATH@SERVER:PORT")
+		os.Exit(1)
+	}
+
+	dur, err := time.ParseDuration(ttlEphemeralVoucher)
+	if err != nil {
+		slog.Error("failed to generate duration", "error", err.Error())
+		os.Exit(1)
+	}
+
+	voucher, err := badger.NewVoucher(badge, dur)
+	if err != nil {
+		slog.Error("failed to generate ui voucher")
+		os.Exit(1)
+	}
+
+	var info *api.HttpsInfo
+
+	if strings.Trim(cfg.Key, " ") != "" && strings.Trim(cfg.Cert, " ") != "" {
+		info = new(api.HttpsInfo)
+		info.Cert = cfg.Cert
+		info.Key = cfg.Key
+	}
+
+	client := api.HttpSubmissions(api.Options{
+		Binding:     emrsUrl.Server,
+		AssetId:     emrsUrl.Asset,
+		AccessToken: voucher,
+	},
+		info,
+	)
+
+  composed, _ := api.ComposeRoute(emrsUrl.Route)
+
+	if e := client.Submit(composed, []byte(data)); e != nil {
+		fmt.Println("Error from HTTP Client:", e.Error())
+		os.Exit(1)
+	}
+	return
+}
+
+func executeGetStatus(binding string, cfg Config) {
+
+	var info *api.HttpsInfo
+
+	if strings.Trim(cfg.Key, " ") != "" && strings.Trim(cfg.Cert, " ") != "" {
+		info = new(api.HttpsInfo)
+		info.Cert = cfg.Cert
+		info.Key = cfg.Key
+	}
+
+	client := api.HttpStats(api.Options{
+		Binding:     binding,
+	},
+		info,
+	)
+
+  ut, err := client.GetUptime()
+
+  if err != nil {
+    slog.Error("error fetching server getStatus", "binding", binding, "error", err.Error)
+    os.Exit(1)
+  }
+
+  fmt.Println("server is up. uptime:", ut.String())
 }

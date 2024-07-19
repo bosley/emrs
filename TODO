@@ -1,0 +1,50 @@
+
+Working on API/ CLI
+
+NOTE:
+
+  its important to include `https://` in the EMRS request urls if https is being used.
+
+
+
+
+api/submit is currently being worked on
+
+  - go client api complete
+
+  - asset validation complete
+  - token validation complete
+  - data extraction from http body complete
+
+  > Need to create work force, scheduler, etc to continue here,
+      as all we need to do now is actually submit the thing
+
+  use:
+      --submit e1310f68-03e3-e436-e3f8-527765b8b650:example.action.path@https://localhost:8080 --data "hello
+
+      the asset id prefixed onto the path will need to match that of an asset stored
+      in the emrs database
+
+      UUID:server@host:port
+
+      --data may be omitted
+
+
+
+
+api/status
+
+  - api client can send GET to server /status/
+  - server responds with uptime
+
+  > currently complete
+
+  use --stat host:port
+
+
+
+
+api/ cnc
+
+  One method planned, but this will mostly be for GUI control (come later)
+  but basic CRUD operations could be stubbed in and tested using cli
