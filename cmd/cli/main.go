@@ -50,12 +50,6 @@ func main() {
 	                                               This might be a non-issue but since the auth is not
 	                                               implemented yet, it may require change later idk
 
-	       --getStatus        Check to see if there is a currently running EMRS instance
-	       --down          Kill a currently running emrs instance (could use PID, could locally-bound port
-	                       and a "local-machine" api to do the IPC between a cli instance and a running server
-
-	       --disable       Disable all running functionality (submisisons to server, ui, etc)
-	                       This could be useful for testing.
 	*/
 
 	emrsHome := flag.String("home", "", "Home directory")
@@ -77,6 +71,10 @@ func main() {
 	withData := flag.String("data", "", "Add data to a submission")
 
   getStatus := flag.String("stat", "", "Submit getStatus reaquest to server Format> https://127.0.0.1:8080")
+
+  down := flag.Bool("down", false, "Stop a server instance using the loaded server configuration")
+
+
 	// beFancy := flag.Bool("fancy", false, "Perform the action with a fancy tui") // (list assets, using bubbletea)
 
 	// panel  := flag.Bool("panel", false, "Launch the interactive TUI that requires direct access to the datastore (not via web api)
@@ -148,6 +146,13 @@ func main() {
 		slog.Error("failed to load datastore", "error", err.Error())
 		os.Exit(1)
 	}
+
+  // Check for "DOWN"
+
+  if *down {
+    executeDown(cfg, badge, dataStrj)
+    return
+  }
 
 	// Check for asset commands
 
@@ -426,4 +431,39 @@ func executeGetStatus(binding string, cfg Config) {
   }
 
   fmt.Println("server is up. uptime:", ut.String())
+}
+
+func executeDown(cfg Config, badge badger.Badge, db datastore.DataStore) {
+
+  // TODO: Each of these commands build their own api which is intended, but once the different
+  //        apis expand we should restructure this main application to route the commands
+  //        to a specific api handler that is constructed once for all of the different commands
+
+	var info *api.HttpsInfo
+
+	if strings.Trim(cfg.Key, " ") != "" && strings.Trim(cfg.Cert, " ") != "" {
+		info = new(api.HttpsInfo)
+		info.Cert = cfg.Cert
+		info.Key = cfg.Key
+	}
+
+  o, e := db.GetOwner()
+  if e != nil {
+    slog.Error("failed to obtain user's access code for CNC", "error", e.Error())
+    os.Exit(1)
+  }
+
+  if !badger.ValidateVoucher(badge.PublicKey(), o.UiKey) {
+    slog.Error("user's current Ui Key is no longer valid. Please replace the key with a new voucher")
+    os.Exit(2)
+  }
+
+  client := api.HttpCNC(cfg.Binding, o.UiKey, info)
+
+  if err := client.Shutdown(); err != nil {
+    slog.Info("failed to request shutdown on server", "error", err.Error())
+    os.Exit(1)
+  }
+
+  fmt.Println("shutdown request sent")
 }
