@@ -18,7 +18,7 @@ const users_create = `insert into users (id, name, hash, key, ring) values (NULL
 const users_get = `select name, hash, key, ring from users where name = ?`
 const users_update = `update users set name = ?, hash = ?. key = ?, ring = ? where name = ?`
 const users_delete = `delete from users where name = ?`
-const users_load_owner = `select name, hash, key, ring from users where ring = 1`
+const users_load_owner = `select name, hash, key, ring from users where ring = ?`
 
 const db_table_create_assets = `create table assets (
   id integer not null primary key,

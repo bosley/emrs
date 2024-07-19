@@ -67,13 +67,12 @@ func main() {
 
 	withName := flag.String("name", "", "Set the name value for a corresponding command")
 
-  emit := flag.String("submit", "", "Submit event to a server. Format>  Asset-UUID:deceoder.proc0.proc1.proc2@https://127.0.0.1:8080")
+	emit := flag.String("submit", "", "Submit event to a server. Format>  Asset-UUID:deceoder.proc0.proc1.proc2@https://127.0.0.1:8080")
 	withData := flag.String("data", "", "Add data to a submission")
 
-  getStatus := flag.String("stat", "", "Submit getStatus reaquest to server Format> https://127.0.0.1:8080")
+	getStatus := flag.String("stat", "", "Submit getStatus reaquest to server Format> https://127.0.0.1:8080")
 
-  down := flag.Bool("down", false, "Stop a server instance using the loaded server configuration")
-
+	down := flag.Bool("down", false, "Stop a server instance using the loaded server configuration")
 
 	// beFancy := flag.Bool("fancy", false, "Perform the action with a fancy tui") // (list assets, using bubbletea)
 
@@ -114,10 +113,10 @@ func main() {
 		os.Exit(1)
 	}
 
-  if *getStatus != "" {
-    executeGetStatus(*getStatus, cfg)
-    return
-  }
+	if *getStatus != "" {
+		executeGetStatus(*getStatus, cfg)
+		return
+	}
 
 	// Check to see if we are just emitting an event
 
@@ -147,12 +146,12 @@ func main() {
 		os.Exit(1)
 	}
 
-  // Check for "DOWN"
+	// Check for "DOWN"
 
-  if *down {
-    executeDown(cfg, badge, dataStrj)
-    return
-  }
+	if *down {
+		executeDown(cfg, badge, dataStrj)
+		return
+	}
 
 	// Check for asset commands
 
@@ -398,7 +397,7 @@ func executeSubmission(badge badger.Badge, cfg Config, url string, data string) 
 		info,
 	)
 
-  composed, _ := api.ComposeRoute(emrsUrl.Route)
+	composed, _ := api.ComposeRoute(emrsUrl.Route)
 
 	if e := client.Submit(composed, []byte(data)); e != nil {
 		fmt.Println("Error from HTTP Client:", e.Error())
@@ -418,26 +417,26 @@ func executeGetStatus(binding string, cfg Config) {
 	}
 
 	client := api.HttpStats(api.Options{
-		Binding:     binding,
+		Binding: binding,
 	},
 		info,
 	)
 
-  ut, err := client.GetUptime()
+	ut, err := client.GetUptime()
 
-  if err != nil {
-    slog.Error("error fetching server getStatus", "binding", binding, "error", err.Error)
-    os.Exit(1)
-  }
+	if err != nil {
+		slog.Error("error fetching server getStatus", "binding", binding, "error", err.Error)
+		os.Exit(1)
+	}
 
-  fmt.Println("server is up. uptime:", ut.String())
+	fmt.Println("server is up. uptime:", ut.String())
 }
 
 func executeDown(cfg Config, badge badger.Badge, db datastore.DataStore) {
 
-  // TODO: Each of these commands build their own api which is intended, but once the different
-  //        apis expand we should restructure this main application to route the commands
-  //        to a specific api handler that is constructed once for all of the different commands
+	// TODO: Each of these commands build their own api which is intended, but once the different
+	//        apis expand we should restructure this main application to route the commands
+	//        to a specific api handler that is constructed once for all of the different commands
 
 	var info *api.HttpsInfo
 
@@ -447,23 +446,23 @@ func executeDown(cfg Config, badge badger.Badge, db datastore.DataStore) {
 		info.Key = cfg.Key
 	}
 
-  o, e := db.GetOwner()
-  if e != nil {
-    slog.Error("failed to obtain user's access code for CNC", "error", e.Error())
-    os.Exit(1)
-  }
+	o, e := db.GetOwner()
+	if e != nil {
+		slog.Error("failed to obtain user's access code for CNC", "error", e.Error())
+		os.Exit(1)
+	}
 
-  if !badger.ValidateVoucher(badge.PublicKey(), o.UiKey) {
-    slog.Error("user's current Ui Key is no longer valid. Please replace the key with a new voucher")
-    os.Exit(2)
-  }
+	if !badger.ValidateVoucher(badge.PublicKey(), o.UiKey) {
+		slog.Error("user's current Ui Key is no longer valid. Please replace the key with a new voucher")
+		os.Exit(2)
+	}
 
-  client := api.HttpCNC(cfg.Binding, o.UiKey, info)
+	client := api.HttpCNC(cfg.Binding, o.UiKey, info)
 
-  if err := client.Shutdown(); err != nil {
-    slog.Info("failed to request shutdown on server", "error", err.Error())
-    os.Exit(1)
-  }
+	if err := client.Shutdown(); err != nil {
+		slog.Info("failed to request shutdown on server", "error", err.Error())
+		os.Exit(1)
+	}
 
-  fmt.Println("shutdown request sent")
+	fmt.Println("shutdown request sent")
 }

@@ -211,17 +211,18 @@ func (c *controller) GetAssets() []Asset {
 }
 
 func (c *controller) GetOwner() (User, error) {
+	var u User
 	stmt, err := c.db.Prepare(users_load_owner)
 	if err != nil {
-		return User{}, err
+		return u, err
 	}
 	defer stmt.Close()
-	u := User{}
-	err = stmt.QueryRow().Scan(&u.DisplayName, &u.Hash, &u.UiKey, &u.Ring)
-	if err != nil {
-		return User{}, err
+
+	err = stmt.QueryRow(1).Scan(&u.DisplayName, &u.Hash, &u.UiKey, &u.Ring)
+	if err == nil {
+		return u, nil
 	}
-	return u, nil
+	return User{}, err
 }
 
 func (c *controller) UpdateOwnerUiKey(key string) bool {
