@@ -137,6 +137,7 @@ func (c *controller) AddAsset(asset Asset) bool {
 		slog.Error("error tx commit", "err", err.Error())
 		return false
 	}
+	slog.Debug("complete")
 	return true
 }
 
@@ -159,11 +160,12 @@ func (c *controller) RemoveAsset(id string) bool {
 		slog.Error(err.Error())
 		return false
 	}
+	slog.Debug("complete")
 	return true
 }
 
 func (c *controller) UpdateAsset(asset Asset) bool {
-	slog.Debug("updatimg asset", "id", asset.Id)
+	slog.Debug("updatimg asset", "id", asset.Id, "name", asset.DisplayName)
 	tx, err := c.db.Begin()
 	if err != nil {
 		slog.Error(err.Error())
@@ -175,12 +177,13 @@ func (c *controller) UpdateAsset(asset Asset) bool {
 		return false
 	}
 	defer stmt.Close()
-	_, err = stmt.Exec(asset.Id, asset.DisplayName)
+	_, err = stmt.Exec(asset.Id, asset.DisplayName, asset.Id)
 	err = tx.Commit()
 	if err != nil {
 		slog.Error(err.Error())
 		return false
 	}
+	slog.Debug("complete")
 	return true
 }
 
@@ -207,6 +210,7 @@ func (c *controller) GetAssets() []Asset {
 		slog.Error(err.Error())
 		return make([]Asset, 0)
 	}
+	slog.Debug("complete")
 	return result
 }
 
@@ -222,6 +226,7 @@ func (c *controller) GetOwner() (User, error) {
 	if err == nil {
 		return u, nil
 	}
+	slog.Debug("complete")
 	return User{}, err
 }
 
@@ -242,17 +247,13 @@ func (c *controller) UpdateOwner(owner User) bool {
 // --
 
 func (c *controller) retrieveUser(username string) *User {
-
 	stmt, err := c.db.Prepare(users_get)
-
 	if err != nil {
 		slog.Error("error retreiving user", "user", username, "err", err.Error())
 		return nil
 	}
 	defer stmt.Close()
-
 	u := User{}
-
 	err = stmt.QueryRow(username).Scan(&u.DisplayName, &u.Hash, &u.UiKey, &u.Ring)
 	if err == nil {
 		return &u
