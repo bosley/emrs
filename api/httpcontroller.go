@@ -5,11 +5,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
 
 const (
@@ -90,4 +92,21 @@ func newHttpClient(info *HttpsInfo) *http.Client {
 	}
 	tr := &http.Transport{TLSClientConfig: config}
 	return &http.Client{Transport: tr}
+}
+
+func formUrlFromBinding(binding string, httpsEnabled bool) (string, error) {
+	_, err := url.ParseRequestURI(binding)
+	if err != nil || strings.HasPrefix(binding, "localhost") {
+		if httpsEnabled {
+			binding = fmt.Sprintf("https://%s", binding)
+		} else {
+			binding = fmt.Sprintf("http://%s", binding)
+		}
+		_, e := url.ParseRequestURI(binding)
+		if e != nil {
+			slog.Error("failed to make the given binding work for CNC", "error", e.Error())
+			return "", e
+		}
+	}
+	return binding, nil
 }
