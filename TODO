@@ -5,9 +5,6 @@ NOTE:
 
   its important to include `https://` in the EMRS request urls if https is being used.
 
-
-
-
 api/submit is currently being worked on
 
   - go client api complete
@@ -42,9 +39,11 @@ api/status
   use --stat host:port
 
 
-
-
 api/ cnc
 
-  One method planned, but this will mostly be for GUI control (come later)
-  but basic CRUD operations could be stubbed in and tested using cli
+  - api client can POST requests to /cnc/shutdown
+  - server will shutdown
+  - has different auth than other endpoints (requires exact, and valid, voucher stored in db as uikey)
+
+
+
