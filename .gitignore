@@ -24,3 +24,5 @@ go.work.sum
 bin
 
 **/*.DS_Store
+
+*.wasm

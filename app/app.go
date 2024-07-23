@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/bosley/emrs/badger"
 	"github.com/bosley/emrs/datastore"
+	"github.com/bosley/emrs/legate"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
@@ -12,10 +13,15 @@ import (
 	"time"
 )
 
+const (
+	wasmModuleName = "emrs"
+)
+
 type Opts struct {
 	Badge     badger.Badge
 	Binding   string
 	DataStore datastore.DataStore
+	LegateCfg legate.Opts
 }
 
 type httpsInfo struct {
@@ -30,14 +36,25 @@ type App struct {
 	started time.Time
 
 	httpsSettings *httpsInfo // nil if not using https
+
+	procEng *legate.Engine
 }
 
 func New(options *Opts) *App {
-	return &App{
+
+	app := &App{
 		binding: options.Binding,
 		badge:   options.Badge,
 		db:      options.DataStore,
+		procEng: nil,
 	}
+
+	if err := app.initLegate(&options.LegateCfg); err != nil {
+		slog.Error("failed to initialize Legate", "error", err.Error())
+		os.Exit(1)
+	}
+
+	return app
 }
 
 func (a *App) UseHttps(keyPath string, certPath string) {
@@ -101,6 +118,7 @@ func (a *App) Run(enableReleaseMode bool) {
 		slog.Error("error starting the server", "error", err.Error())
 		os.Exit(1)
 	}
+
 }
 
 // All HTTP requests come with two pieces of information to validate them
@@ -129,6 +147,22 @@ func (a *App) validateRequest(origin string, token string) error {
 	if !a.badge.ValidateVoucher(token) {
 		return errors.New("invalid token")
 	}
+
+	return nil
+}
+
+func (a *App) initLegate(opts *legate.Opts) error {
+
+	slog.Debug("initialize legate")
+
+	var err error
+	a.procEng, err = legate.New(wasmModuleName, opts)
+	if err != nil {
+		return err
+	}
+
+	// Testing WASMER
+	// legate.Dev()
 
 	return nil
 }

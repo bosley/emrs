@@ -8,6 +8,7 @@ import (
 	"github.com/bosley/emrs/app"
 	"github.com/bosley/emrs/badger"
 	"github.com/bosley/emrs/datastore"
+	"github.com/bosley/emrs/legate"
 	"gopkg.in/yaml.v3"
 	"log/slog"
 	"os"
@@ -21,10 +22,14 @@ const (
 	defaultEnvHome           = "EMRS_HOME"
 	defaultBinding           = "127.0.0.1:8080"
 	defaultStoragePath       = "storage"
+	defaultModulesPath       = "modules"
 	defaultRuntimeFile       = ".emrs.pid"
 	defaultConfigName        = "server.cfg"
 	defaultUiKeyDuration     = "8760h" // 1 year
 	defaultUserGivenDuration = "4320h" // ~6 months
+
+	defaultLegateTtl   = time.Duration(time.Second * 60)
+	defaultLegatePages = legate.MemPage255MB
 )
 
 const (
@@ -32,10 +37,11 @@ const (
 )
 
 type Config struct {
-	Binding  string `yaml:binding`
-	Key      string `yaml:key`
-	Cert     string `yaml:cert`
-	Identity string `yaml:identity`
+	Binding  string      `yaml:binding`
+	Key      string      `yaml:key`
+	Cert     string      `yaml:cert`
+	Identity string      `yaml:identity`
+	Legate   legate.Opts `yaml:legate`
 }
 
 func main() {
@@ -86,6 +92,8 @@ func main() {
 				slog.NewTextHandler(os.Stdout,
 					&slog.HandlerOptions{
 						Level: slog.LevelDebug,
+
+						AddSource: true,
 					})))
 	}
 
@@ -205,6 +213,7 @@ func main() {
 		Badge:     badge,
 		Binding:   cfg.Binding,
 		DataStore: dataStrj,
+		LegateCfg: cfg.Legate,
 	})
 
 	// Check if we can use HTTPS
@@ -288,6 +297,11 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
 	cfg := Config{
 		Binding:  defaultBinding,
 		Identity: badge.EncodeIdentityString(),
+		Legate: legate.Opts{
+			Ttl:     defaultLegateTtl,
+			Pages:   defaultLegatePages,
+			Targets: make([]string, 0),
+		},
 	}
 
 	b, e := yaml.Marshal(&cfg)
