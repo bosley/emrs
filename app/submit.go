@@ -46,6 +46,7 @@ func (a *App) submitEvent(c *gin.Context) {
 
 	slog.Debug("EVENT SUBMITTED", "body", c.Request.Body)
 
+	origin := c.GetHeader("origin")
 	route := c.GetHeader("route")
 
 	data := new(bytes.Buffer)
@@ -53,28 +54,23 @@ func (a *App) submitEvent(c *gin.Context) {
 
 	slog.Info("event submission request", "route", route, "body", data)
 
-	println(`
+  // Submit the job
+  //
+  if err := a.runner.SubmitJob(&Job{
+    Ctx: nil,
+    Origin: origin,
+    Destination: route,
+    Data: data.Bytes(),
+  }); err != nil {
+	  c.JSON(500, gin.H{
+	  	"status": "failed to submit job for execution",
+      "error": err.Error(),
+	  })
+    return
+  }
 
-
-
-      TODO: 
-
-          This is not yet completed.
-
-          The request has been authorized, but needs to be executed.
-
-
-          We need to setup the event system that takes the given "route" and passes the "data"
-
-          The first item in the route (which we have yet to decompose/ validate) must be an ingestion
-          node. This node will define and populate the data type that the trailered nodes will process
-          based on the data handed to us by the user (if any)
-
-
-
-
-  `)
-
+  // Complete
+  //
 	c.JSON(200, gin.H{
 		"status": "under construction",
 	})
