@@ -54,23 +54,23 @@ func (a *App) submitEvent(c *gin.Context) {
 
 	slog.Info("event submission request", "route", route, "body", data)
 
-  // Submit the job
-  //
-  if err := a.runner.SubmitJob(&Job{
-    Ctx: nil,
-    Origin: origin,
-    Destination: route,
-    Data: data.Bytes(),
-  }); err != nil {
-	  c.JSON(500, gin.H{
-	  	"status": "failed to submit job for execution",
-      "error": err.Error(),
-	  })
-    return
-  }
+	// Submit the job
+	//
+	if err := a.runner.SubmitJob(&Job{
+		Ctx:         nil,
+		Origin:      origin,
+		Destination: route,
+		Data:        data.Bytes(),
+	}); err != nil {
+		c.JSON(500, gin.H{
+			"status": "failed to submit job for execution",
+			"error":  err.Error(),
+		})
+		return
+	}
 
-  // Complete
-  //
+	// Complete
+	//
 	c.JSON(200, gin.H{
 		"status": "under construction",
 	})

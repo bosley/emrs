@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"github.com/bosley/emrs/badger"
 	"github.com/bosley/emrs/datastore"
@@ -10,15 +11,14 @@ import (
 	"os"
 	"strings"
 	"time"
-  "context"
 )
 
 type Opts struct {
-	Badge     badger.Badge
-  ActionsPath string
-  ActionRootFile string
-	Binding   string
-	DataStore datastore.DataStore
+	Badge          badger.Badge
+	ActionsPath    string
+	ActionRootFile string
+	Binding        string
+	DataStore      datastore.DataStore
 }
 
 type httpsInfo struct {
@@ -34,27 +34,27 @@ type App struct {
 
 	httpsSettings *httpsInfo // nil if not using https
 
-  runner Runner
+	runner Runner
 
-  ctx     context.Context
+	ctx context.Context
 }
 
 func New(options *Opts) (*App, error) {
 
-  app := &App{
+	app := &App{
 		binding: options.Binding,
 		badge:   options.Badge,
 		db:      options.DataStore,
-    runner:  &yaegiRunner{},
-    ctx:     context.Background(),
+		runner:  &yaegiRunner{},
+		ctx:     context.Background(),
 	}
 
-  if err := app.runner.Load(options.ActionsPath, options.ActionRootFile); err != nil {
-    slog.Error("failed to load actions path", "error", err.Error())
-    return nil, err
-  }
+	if err := app.runner.Load(options.ActionsPath, options.ActionRootFile); err != nil {
+		slog.Error("failed to load actions path", "error", err.Error())
+		return nil, err
+	}
 
-  return app, nil
+	return app, nil
 }
 
 func (a *App) UseHttps(keyPath string, certPath string) {

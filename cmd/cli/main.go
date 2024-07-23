@@ -9,12 +9,12 @@ import (
 	"github.com/bosley/emrs/badger"
 	"github.com/bosley/emrs/datastore"
 	"gopkg.in/yaml.v3"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-  "io"
 )
 
 const (
@@ -27,9 +27,9 @@ const (
 	defaultUiKeyDuration     = "8760h" // 1 year
 	defaultUserGivenDuration = "4320h" // ~6 months
 
-  defaultActionsDir        = "actions"
-  defaultActionsBaseFile   = "_actions/blueprint.go"
-  defaultActionsInstalled  = "init.go"
+	defaultActionsDir       = "actions"
+	defaultActionsBaseFile  = "_actions/blueprint.go"
+	defaultActionsInstalled = "init.go"
 )
 
 const (
@@ -207,17 +207,17 @@ func main() {
 	// Create the EMRS server application
 
 	emrs, launchErr := app.New(&app.Opts{
-		Badge:     badge,
-		Binding:   cfg.Binding,
-		DataStore: dataStrj,
-    ActionsPath: filepath.Join(*emrsHome, defaultActionsDir),
-    ActionRootFile: defaultActionsInstalled,
+		Badge:          badge,
+		Binding:        cfg.Binding,
+		DataStore:      dataStrj,
+		ActionsPath:    filepath.Join(*emrsHome, defaultActionsDir),
+		ActionRootFile: defaultActionsInstalled,
 	})
 
-  if launchErr != nil { 
-    slog.Error("failed to create emrs application", "error", launchErr.Error())
-    os.Exit(1)
-  }
+	if launchErr != nil {
+		slog.Error("failed to create emrs application", "error", launchErr.Error())
+		os.Exit(1)
+	}
 
 	// Check if we can use HTTPS
 
@@ -279,10 +279,10 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
 	strj := filepath.Join(home, defaultStoragePath)
 	os.MkdirAll(strj, 0755)
 
-  actions := filepath.Join(home, defaultActionsDir)
-  os.MkdirAll(actions, 0755)
+	actions := filepath.Join(home, defaultActionsDir)
+	os.MkdirAll(actions, 0755)
 
-  actionInitDest := filepath.Join(actions, defaultActionsInstalled)
+	actionInitDest := filepath.Join(actions, defaultActionsInstalled)
 
 	if err := os.WriteFile(actionInitDest, []byte(globalActionBlueprint), 0600); err != nil {
 		slog.Error("Failed to write actions init file")

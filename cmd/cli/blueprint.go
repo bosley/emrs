@@ -15,27 +15,35 @@ import (
 type Handler func([]byte)
 
 // All callable handlers that can be triggered by emrs
-// must be included in the handlers map, otherwise they
+// must be included in the route map, otherwise they
 // will be considered internal
-var handlers = map[string]Handler = {
+//
+// Note: routeMap is extracted from this file AFTER
+//       onInit() has been executed, meaning that onInit
+//       can be used to populate routeMap.
+var routeMap = map[string]Handler {
+
+  // Each handler placed here can be called at any time so any
+  // data shared beteween methods should be properly guarded
   "echo": echoHandler,
 }
 
-
+// Handle the "echo" route
 func echoHandler(data []byte) {
-  fmt.Println(data)
+  fmt.Println("ECHO\t>>---> ", string(data))
 }
 
 // Executed iff exists the moment actions are fully loaded
-func onInit() {
+func onInit() error {
+
+  // This is executed BEFORE handlers map is extracted, so this FN
+  // can dynamically populate the handlers map!
+
+  fmt.Println("ACTIONS INIT!")
+
+  // An error here will indicate to the server that it has 
+  // an internal error and can not provice the EMRS service
+  return nil
 }
 
-// Executed iff exists right before a valid handler function is
-// located
-func onBeforeHandle(handler string) {
-  // We may want to pass in a ctx to permit us to
-  // cancel things or to store a translated variant of
-  // the data, then users can define a "Decoder" in the file for 
-  // the handler
-}
 `
