@@ -1,6 +1,7 @@
 package main
 
 var globalActionBlueprint = `
+
 // All actions need to be defined in "actions" package
 // but we set GOPATH to the $EMRS_HOME/actions so
 // files placed there can be included by yaegi
@@ -10,40 +11,35 @@ package actions
 
 import (
   "fmt"
+  "emrs"
 )
 
-type Handler func([]byte)
+func availableEmrsFunctions() {
 
-// All callable handlers that can be triggered by emrs
-// must be included in the route map, otherwise they
-// will be considered internal
-//
-// Note: routeMap is extracted from this file AFTER
-//       onInit() has been executed, meaning that onInit
-//       can be used to populate routeMap.
-var routeMap = map[string]Handler {
+  fmt.Println("If you are seeing this message, edit your EMRS_HOME/actions/init.go!")
 
-  // Each handler placed here can be called at any time so any
-  // data shared beteween methods should be properly guarded
-  "echo": echoHandler,
+  emrs.Log("Some information")
+
+  emrs.Emit("signal.name", []byte("some data"))
+
+  emrs.Signal("signal.name.no.data")
 }
 
-// Handle the "echo" route
-func echoHandler(data []byte) {
-  fmt.Println("ECHO\t>>---> ", string(data))
-}
+func onData(origin string, route []string, data []byte) error {
 
-// Executed iff exists the moment actions are fully loaded
-func onInit() error {
+  fmt.Println("request from", origin)
 
-  // This is executed BEFORE handlers map is extracted, so this FN
-  // can dynamically populate the handlers map!
+  // Now we need to route and parse the data based on what we want to do
 
-  fmt.Println("ACTIONS INIT!")
-
-  // An error here will indicate to the server that it has 
-  // an internal error and can not provice the EMRS service
   return nil
 }
+
+func onInit() error {
+
+  availableEmrsFunctions() 
+
+  return nil
+}
+
 
 `

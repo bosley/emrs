@@ -12,6 +12,7 @@ package app
 
 import (
 	"bytes"
+	"github.com/bosley/emrs/api"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
@@ -47,7 +48,23 @@ func (a *App) submitEvent(c *gin.Context) {
 	slog.Debug("EVENT SUBMITTED", "body", c.Request.Body)
 
 	origin := c.GetHeader("origin")
-	route := c.GetHeader("route")
+
+	route, err := api.DecomposeRoute(c.GetHeader("route"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "bad route",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	if len(route) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "bad route",
+			"message": "empty route",
+		})
+		return
+	}
 
 	data := new(bytes.Buffer)
 	data.ReadFrom(c.Request.Body)
@@ -57,7 +74,6 @@ func (a *App) submitEvent(c *gin.Context) {
 	// Submit the job
 	//
 	if err := a.runner.SubmitJob(&Job{
-		Ctx:         nil,
 		Origin:      origin,
 		Destination: route,
 		Data:        data.Bytes(),

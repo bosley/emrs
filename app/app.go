@@ -11,6 +11,9 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/traefik/yaegi/interp"
+	"reflect"
 )
 
 type Opts struct {
@@ -49,7 +52,11 @@ func New(options *Opts) (*App, error) {
 		ctx:     context.Background(),
 	}
 
-	if err := app.runner.Load(options.ActionsPath, options.ActionRootFile); err != nil {
+	if err := app.runner.Load(
+		options.ActionsPath,
+		options.ActionRootFile,
+		app.buildYaegiExports()); err != nil {
+
 		slog.Error("failed to load actions path", "error", err.Error())
 		return nil, err
 	}
@@ -148,4 +155,31 @@ func (a *App) validateRequest(origin string, token string) error {
 	}
 
 	return nil
+}
+
+// The map built by this function offers-up application-specific functions
+// to the interpreter runtime that parses the user's code. Through this
+// mapping we offer the ability to interact with the EMRS system directly
+func (a *App) buildYaegiExports() interp.Exports {
+
+	exports := make(map[string]map[string]reflect.Value)
+	exports["emrs/emrs"] = make(map[string]reflect.Value)
+	exports["emrs/emrs"]["Log"] = reflect.ValueOf(a.emrsFnLog)
+	exports["emrs/emrs"]["Emit"] = reflect.ValueOf(a.emrsFnEmit)
+	exports["emrs/emrs"]["Signal"] = reflect.ValueOf(a.emrsFnSignal)
+	return exports
+}
+
+func (a *App) emrsFnLog(x ...string) {
+	slog.Info("emrs-log", "value", x)
+}
+
+func (a *App) emrsFnEmit(signal string, data []byte) {
+
+	slog.Info("EMIT REQUESTED ==> TODO: Fire off a signal with data", "signal", signal, "data", data)
+}
+
+func (a *App) emrsFnSignal(signal string) {
+
+	slog.Info("SIGNAL REQUESTED ==> TODO: Fire off a signal with NO data", "signal", signal)
 }
