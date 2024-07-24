@@ -122,3 +122,16 @@ Example submission:
 ```
 
 The above submission will send an empty data field 
+
+
+## Disk Layout
+
+```
+EMRS_HOME
+├── actions
+│   └── init.go                 <----   Where EMRS Url processing path is computerd and request delegated
+├── server.cfg                  <----   Server identity, https key setup, etc
+└── storage
+    └── datastore.db            <----   EMRS Database
+
+```
