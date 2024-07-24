@@ -9,6 +9,7 @@ import (
 	"github.com/bosley/emrs/badger"
 	"github.com/bosley/emrs/datastore"
 	"gopkg.in/yaml.v3"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -25,6 +26,10 @@ const (
 	defaultConfigName        = "server.cfg"
 	defaultUiKeyDuration     = "8760h" // 1 year
 	defaultUserGivenDuration = "4320h" // ~6 months
+
+	defaultActionsDir       = "actions"
+	defaultActionsBaseFile  = "_actions/blueprint.go"
+	defaultActionsInstalled = "init.go"
 )
 
 const (
@@ -201,11 +206,18 @@ func main() {
 
 	// Create the EMRS server application
 
-	emrs := app.New(&app.Opts{
-		Badge:     badge,
-		Binding:   cfg.Binding,
-		DataStore: dataStrj,
+	emrs, launchErr := app.New(&app.Opts{
+		Badge:          badge,
+		Binding:        cfg.Binding,
+		DataStore:      dataStrj,
+		ActionsPath:    filepath.Join(*emrsHome, defaultActionsDir),
+		ActionRootFile: defaultActionsInstalled,
 	})
+
+	if launchErr != nil {
+		slog.Error("failed to create emrs application", "error", launchErr.Error())
+		os.Exit(1)
+	}
 
 	// Check if we can use HTTPS
 
@@ -266,6 +278,16 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
 
 	strj := filepath.Join(home, defaultStoragePath)
 	os.MkdirAll(strj, 0755)
+
+	actions := filepath.Join(home, defaultActionsDir)
+	os.MkdirAll(actions, 0755)
+
+	actionInitDest := filepath.Join(actions, defaultActionsInstalled)
+
+	if err := os.WriteFile(actionInitDest, []byte(globalActionBlueprint), 0600); err != nil {
+		slog.Error("Failed to write actions init file")
+		os.Exit(1)
+	}
 
 	oneYear, err := time.ParseDuration(defaultUiKeyDuration)
 	if err != nil {
@@ -333,6 +355,28 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
     `)
 	}
 	os.Exit(0)
+}
+
+func copyFile(src, dst string) (int64, error) {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer srcFile.Close()
+	srcFileState, err := srcFile.Stat()
+	if err != nil {
+		return 0, err
+	}
+
+	if !srcFileState.Mode().IsRegular() {
+		return 0, fmt.Errorf("%s is not a regular file", src)
+	}
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer dstFile.Close()
+	return io.Copy(dstFile, srcFile)
 }
 
 func generateVouchers(badge badger.Badge, n int, durr time.Duration) {

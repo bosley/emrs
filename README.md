@@ -110,19 +110,10 @@ path chunks all follow the same general fomatting rule for validation; they must
 be alphanumeric, with the allowance of `_` and `-`. Any other symbols contained in
 a processing path or UUID will be flagged as invalid.
 
-Each chunk within the processing path represents one of two types of nodes:
+The chunks within the processing path as-of right now are arbitrary and the entire path
+is mapped to a configurable action.
 
-"ingestion" and "processing"
-
-The first chunk in the path is the unique name for a specific ingestion node.
-Any path that starts with a node that isn't specifically an ingestion node, the path
-will be considered invalid and the request will be dropped.
-
-All nodes following the ingestion node will receive, in-order, a copy of the data
-that the ingestion node yields from the submitted binary data.
-
-If any node experiences a failure in processing, the pipeline will be considered a
-failure, and the request will be stopped.
+In the future, the processing path will determine how the data is pipelined through the system
 
 Example submission:
 
@@ -131,3 +122,16 @@ Example submission:
 ```
 
 The above submission will send an empty data field 
+
+
+## Disk Layout
+
+```
+EMRS_HOME
+├── actions
+│   └── init.go                 <----   Where EMRS Url processing path is computerd and request delegated
+├── server.cfg                  <----   Server identity, https key setup, etc
+└── storage
+    └── datastore.db            <----   EMRS Database
+
+```

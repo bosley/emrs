@@ -1,2 +1,2 @@
 go work init .
-go work use app badger cmd/cli
+go work use api app badger cmd/cli
