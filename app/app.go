@@ -167,6 +167,7 @@ func (a *App) buildYaegiExports() interp.Exports {
 	exports["emrs/emrs"]["Log"] = reflect.ValueOf(a.emrsFnLog)
 	exports["emrs/emrs"]["Emit"] = reflect.ValueOf(a.emrsFnEmit)
 	exports["emrs/emrs"]["Signal"] = reflect.ValueOf(a.emrsFnSignal)
+	exports["emrs/emrs"]["Import"] = reflect.ValueOf(a.emrsFnImport)
 	return exports
 }
 
@@ -182,4 +183,8 @@ func (a *App) emrsFnEmit(signal string, data []byte) {
 func (a *App) emrsFnSignal(signal string) {
 
 	slog.Info("SIGNAL REQUESTED ==> TODO: Fire off a signal with NO data", "signal", signal)
+}
+
+func (a *App) emrsFnImport(imports ...string) error {
+  return a.runner.Import(imports)
 }

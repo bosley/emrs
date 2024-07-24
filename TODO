@@ -1,3 +1,63 @@
+
+
+Document this somewhere:
+
+```
+
+import emrs modules in the action code with `emrsImport`. It can take any
+number of strings, and the "paths" given should be the name of the directory
+as it sits in EMRS_HOME/action, so EMRS_HOME/action/example would be imported
+by init.go via `emrsImport("example")`.
+
+Within the example directory, there is expected to be a '_emrs.go' file
+
+The prefixed `_` is to allow the emrs.go file to reside in an existing go project
+without causing too many problems. 
+
+inside the '_emrs.go' there should exist a global-scope '[]string' defined
+as 'Exports` within an `emrs` package that lists the files to be imported by the yaegi interpreter to expand
+action definitions.
+
+Each file listed in 'Exports' should be relative to the file that the map exists within,
+
+```
+
+Layout:
+
+```
+
+  Actions
+    |--- init.go
+    |--- example
+          |--- _emrs.go
+          |--- myEmrsMod.go
+          |--- _subfolder
+                  |--- otherMod.go
+
+
+_emrs.go:
+
+  package emrs    // NOTE: _emrs.go is in emrs package
+
+  var Exports = []string {
+      "myEmrsMod.go",
+      "_subfolder/otherMod.go"
+  }
+
+myEmrsMod.go:
+
+  package example
+  
+  func Ayy() string { return "lmao" }
+
+_subfolder/otherMod.go
+
+  package example
+
+  func WhatsYorName() string { return "TONY!" }
+
+```
+
 Document this somewhere:
 
 ```
