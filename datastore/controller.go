@@ -231,10 +231,26 @@ func (c *controller) GetOwner() (User, error) {
 }
 
 func (c *controller) UpdateOwnerUiKey(key string) bool {
-
-	// Need to replace the key value for user where ring = 1
-	panic("NOT YET IMPLEMENTED")
-	return false
+	tx, err := c.db.Begin()
+	if err != nil {
+		slog.Error("failed to create tx", "err", err.Error())
+		return false
+	}
+	stmt, err := tx.Prepare(users_update_ui_key)
+	if err != nil {
+		slog.Error("error preparing user key update", "err", err.Error())
+		return false
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(
+		key,
+		RingOne)
+	err = tx.Commit()
+	if err != nil {
+		slog.Error("error tx commit", "err", err.Error())
+		return false
+	}
+	return true
 }
 
 func (c *controller) UpdateOwner(owner User) bool {

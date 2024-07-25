@@ -8,19 +8,21 @@ import (
 	"github.com/bosley/emrs/app"
 	"github.com/bosley/emrs/badger"
 	"github.com/bosley/emrs/datastore"
+	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
 	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 )
 
 const (
 	defaultServerName        = "EMRS Server"
 	defaultEnvHome           = "EMRS_HOME"
-	defaultBinding           = "127.0.0.1:8080"
+	defaultBinding           = "localhost:8080"
 	defaultStoragePath       = "storage"
 	defaultConfigName        = "server.cfg"
 	defaultUiKeyDuration     = "8760h" // 1 year
@@ -51,7 +53,7 @@ func main() {
 		slog.New(
 			slog.NewTextHandler(os.Stdout,
 				&slog.HandlerOptions{
-					Level: slog.LevelWarn,
+					Level: slog.LevelInfo,
 				})))
 
 	switch os.Args[1] {
@@ -178,8 +180,6 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
 
 	if err := os.WriteFile(filepath.Join(home, defaultConfigName), b, 0600); err != nil {
 		slog.Error("Failed to write configuration file")
-		// TODO: Its not required, but we could MOVE the existing, forced, items off
-		//        to the side in a temp folder and restore them on a failure via defer
 		os.Exit(1)
 	}
 
@@ -235,6 +235,16 @@ func mustLoadCfgAndBadge(home string) (Config, badger.Badge) {
 		os.Exit(1)
 	}
 	return cfg, badge
+}
+
+func mustGetPassword() []byte {
+	fmt.Print("Password: ")
+	bytepw, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		slog.Error("failed to read password", "error", err.Error())
+		os.Exit(1)
+	}
+	return bytepw
 }
 
 func cliServer() {
@@ -429,6 +439,7 @@ func cliSubmit() {
 func cliCnc() {
 	cncCmd := flag.NewFlagSet("cnc", flag.ExitOnError)
 	down := cncCmd.Bool("down", false, "Shutdown local server")
+	updateUiKey := cncCmd.Bool("change-ui-key", false, "Change out the UI Key")
 	emrsHome := cncCmd.String("home", "", "Home directory")
 
 	cncCmd.Parse(os.Args[2:])
@@ -441,13 +452,56 @@ func cliCnc() {
 		os.Exit(1)
 	}
 
+	o, e := dataStrj.GetOwner()
+	if e != nil {
+		slog.Error("failed to retrieve owner for auth", "error", e.Error())
+		os.Exit(1)
+	}
+
+	{
+		userInput := mustGetPassword()
+
+		println("\r\n")
+
+		if err := badger.RawIsHashMatch(userInput, []byte(o.Hash)); err != nil {
+			slog.Error("authentication error", "error", err.Error())
+			os.Exit(7)
+		}
+		slog.Info("authentication complete")
+	}
+
 	if *down {
+		slog.Debug("shutdown request")
 		cfg, badge := mustLoadCfgAndBadge(*emrsHome)
 		executeDown(cfg, badge, dataStrj)
 		return
 	}
 
-	fmt.Println("no arguments given to cnc")
+	if *updateUiKey {
+
+		_, badge := mustLoadCfgAndBadge(*emrsHome)
+
+		oneYear, err := time.ParseDuration(defaultUiKeyDuration)
+		if err != nil {
+			slog.Error("failed to setup key duration")
+			os.Exit(1)
+		}
+
+		voucher, err := badger.NewVoucher(badge, oneYear)
+		if err != nil {
+			slog.Error("failed to generate ui key")
+			os.Exit(1)
+		}
+
+		if !dataStrj.UpdateOwnerUiKey(voucher) {
+			slog.Error("failed to store new ui key")
+			os.Exit(1)
+		}
+		fmt.Println("key updated")
+		return
+	}
+
+	fmt.Println("no valid arguments given to cnc")
 	return
 }
 
@@ -627,7 +681,7 @@ func executeDown(cfg Config, badge badger.Badge, db datastore.DataStore) {
 		os.Exit(1)
 	}
 
-	fmt.Println("shutdown request sent")
+	fmt.Println("complete")
 }
 
 func executeCreateAction(cfg Config, home string, name string, location string) {
