@@ -17,11 +17,11 @@ import (
 )
 
 type Opts struct {
-	Badge          badger.Badge
-	ActionsPath    string
-	ActionRootFile string
-	Binding        string
-	DataStore      datastore.DataStore
+	Badge      badger.Badge
+	Binding    string
+	DataStore  datastore.DataStore
+	ActionMap  map[string]string
+	ActionPath string
 }
 
 type httpsInfo struct {
@@ -53,8 +53,8 @@ func New(options *Opts) (*App, error) {
 	}
 
 	if err := app.runner.Load(
-		options.ActionsPath,
-		options.ActionRootFile,
+		options.ActionPath,
+		options.ActionMap,
 		app.buildYaegiExports()); err != nil {
 
 		slog.Error("failed to load actions path", "error", err.Error())
@@ -167,7 +167,6 @@ func (a *App) buildYaegiExports() interp.Exports {
 	exports["emrs/emrs"]["Log"] = reflect.ValueOf(a.emrsFnLog)
 	exports["emrs/emrs"]["Emit"] = reflect.ValueOf(a.emrsFnEmit)
 	exports["emrs/emrs"]["Signal"] = reflect.ValueOf(a.emrsFnSignal)
-	exports["emrs/emrs"]["Import"] = reflect.ValueOf(a.emrsFnImport)
 	return exports
 }
 
@@ -183,8 +182,4 @@ func (a *App) emrsFnEmit(signal string, data []byte) {
 func (a *App) emrsFnSignal(signal string) {
 
 	slog.Info("SIGNAL REQUESTED ==> TODO: Fire off a signal with NO data", "signal", signal)
-}
-
-func (a *App) emrsFnImport(imports ...string) error {
-  return a.runner.Import(imports)
 }

@@ -22,14 +22,11 @@ const (
 	defaultEnvHome           = "EMRS_HOME"
 	defaultBinding           = "127.0.0.1:8080"
 	defaultStoragePath       = "storage"
-	defaultRuntimeFile       = ".emrs.pid"
 	defaultConfigName        = "server.cfg"
 	defaultUiKeyDuration     = "8760h" // 1 year
 	defaultUserGivenDuration = "4320h" // ~6 months
 
-	defaultActionsDir       = "actions"
-	defaultActionsBaseFile  = "_actions/blueprint.go"
-	defaultActionsInstalled = "init.go"
+	defaultActionsDir = "actions"
 )
 
 const (
@@ -37,10 +34,11 @@ const (
 )
 
 type Config struct {
-	Binding  string `yaml:binding`
-	Key      string `yaml:key`
-	Cert     string `yaml:cert`
-	Identity string `yaml:identity`
+	Binding  string            `yaml:binding`
+	Key      string            `yaml:key`
+	Cert     string            `yaml:cert`
+	Identity string            `yaml:identity`
+	Actions  map[string]string `yaml:actions`
 }
 
 func main() {
@@ -78,6 +76,10 @@ func main() {
 	getStatus := flag.String("stat", "", "Submit getStatus reaquest to server Format> https://127.0.0.1:8080")
 
 	down := flag.Bool("down", false, "Stop a server instance using the loaded server configuration")
+
+	createAction := flag.String("new-action", "", "Install an action file (requires --name)")
+
+	// TODO>   check for new action, get --name. copy to home/actions
 
 	// beFancy := flag.Bool("fancy", false, "Perform the action with a fancy tui") // (list assets, using bubbletea)
 
@@ -204,14 +206,23 @@ func main() {
 		return
 	}
 
+	if strings.Trim(*createAction, " ") != "" {
+		if strings.Trim(*withName, " ") == "" {
+			slog.Error("`--new-action` requires `--name`")
+			os.Exit(1)
+		}
+		executeCreateAction(cfg, *emrsHome, *withName, *createAction)
+		return
+	}
+
 	// Create the EMRS server application
 
 	emrs, launchErr := app.New(&app.Opts{
-		Badge:          badge,
-		Binding:        cfg.Binding,
-		DataStore:      dataStrj,
-		ActionsPath:    filepath.Join(*emrsHome, defaultActionsDir),
-		ActionRootFile: defaultActionsInstalled,
+		Badge:      badge,
+		Binding:    cfg.Binding,
+		DataStore:  dataStrj,
+		ActionMap:  cfg.Actions,
+		ActionPath: filepath.Join(*emrsHome, defaultActionsDir),
 	})
 
 	if launchErr != nil {
@@ -281,13 +292,6 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
 
 	actions := filepath.Join(home, defaultActionsDir)
 	os.MkdirAll(actions, 0755)
-
-	actionInitDest := filepath.Join(actions, defaultActionsInstalled)
-
-	if err := os.WriteFile(actionInitDest, []byte(globalActionBlueprint), 0600); err != nil {
-		slog.Error("Failed to write actions init file")
-		os.Exit(1)
-	}
 
 	oneYear, err := time.ParseDuration(defaultUiKeyDuration)
 	if err != nil {
@@ -509,4 +513,33 @@ func executeDown(cfg Config, badge badger.Badge, db datastore.DataStore) {
 	}
 
 	fmt.Println("shutdown request sent")
+}
+
+func executeCreateAction(cfg Config, home string, name string, location string) {
+	actionsDir := filepath.Join(home, defaultActionsDir)
+	targetName := filepath.Base(location)
+	destination := filepath.Join(actionsDir, targetName)
+
+	slog.Debug("create action", "home", home, "name", name, "source", location, "destination", destination)
+
+	size, err := copyFile(location, destination)
+	if err != nil {
+		slog.Error("failed to copy target file", "source", location, "destination", destination, "error", err.Error())
+		os.Exit(1)
+	}
+	slog.Debug("copy success", "K", size)
+
+	// Now we add it to config
+	cfg.Actions[name] = destination
+
+	b, e := yaml.Marshal(&cfg)
+	if e != nil {
+		slog.Error("Failed to encode new config", "error", e.Error())
+		os.Exit(1)
+	}
+
+	if err := os.WriteFile(filepath.Join(home, defaultConfigName), b, 0600); err != nil {
+		slog.Error("Failed to write configuration file")
+		os.Exit(1)
+	}
 }

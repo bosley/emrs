@@ -2,59 +2,33 @@
 
 Document this somewhere:
 
-```
-
-import emrs modules in the action code with `emrsImport`. It can take any
-number of strings, and the "paths" given should be the name of the directory
-as it sits in EMRS_HOME/action, so EMRS_HOME/action/example would be imported
-by init.go via `emrsImport("example")`.
-
-Within the example directory, there is expected to be a '_emrs.go' file
-
-The prefixed `_` is to allow the emrs.go file to reside in an existing go project
-without causing too many problems. 
-
-inside the '_emrs.go' there should exist a global-scope '[]string' defined
-as 'Exports` within an `emrs` package that lists the files to be imported by the yaegi interpreter to expand
-action definitions.
-
-Each file listed in 'Exports' should be relative to the file that the map exists within,
 
 ```
 
-Layout:
+  Install action:
 
-```
-
-  Actions
-    |--- init.go
-    |--- example
-          |--- _emrs.go
-          |--- myEmrsMod.go
-          |--- _subfolder
-                  |--- otherMod.go
+      go run cmd/cli/*.go --new-action _actions/logger.go --name logger
 
 
-_emrs.go:
+  The go file must have `package <name>` 
 
-  package emrs    // NOTE: _emrs.go is in emrs package
+  Actions should be Global accessable 
 
-  var Exports = []string {
-      "myEmrsMod.go",
-      "_subfolder/otherMod.go"
-  }
+  Functions that accept events should be of the signature type:
 
-myEmrsMod.go:
+      func SomeEventHandler(origin string, route[]string, data[] byte) error {
 
-  package example
-  
-  func Ayy() string { return "lmao" }
+      }
 
-_subfolder/otherMod.go
+  In the EMRS route:      myModule.SomeEventHandler.more.chunks.etc
 
-  package example
 
-  func WhatsYorName() string { return "TONY!" }
+    SomeEventHandler will be called, and the route above, aside from the first two elements (myModule, SomeEventHandler),
+    will be handed to the handler. so [ a.b.c.d.e =>  a.b(  UUID, [C, D, E], DATA)
+
+
+    The trailered chunks can be used by the handler function/ submitter as arbitrary
+    arguments specific to the submission. They don't need to be used.
 
 ```
 
