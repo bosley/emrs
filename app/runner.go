@@ -1,8 +1,8 @@
 package app
 
 import (
+	"fmt"
 	"log/slog"
-	"path/filepath"
 
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
@@ -17,76 +17,65 @@ type Job struct {
 }
 
 type Runner interface {
-	Load(dir string, rootFile string, exports interp.Exports) error
+	Load(actionsPath string, actionMap map[string]string, exports interp.Exports) error
 	SubmitJob(job *Job) error
 }
 
 type yaegiRunner struct {
-	env    *interp.Interpreter
-	onData func(string, []string, []byte) error
+	actions map[string]actionModule
 }
 
-func (r *yaegiRunner) Load(dir string, rootFile string, exports interp.Exports) error {
-	slog.Debug("load runner directory", "dir", dir, "rootFile", rootFile)
+type actionModule struct {
+	env *interp.Interpreter
 
-	r.env = interp.New(interp.Options{
-		GoPath: dir,
-		/*
+	// output buffer
+	// input mechanism, etc
+}
 
-		   TODO:
+func (r *yaegiRunner) Load(actionsPath string, actionMap map[string]string, exports interp.Exports) error {
+	slog.Debug("load runner directory", "actions", len(actionMap))
 
-		         Here we can add FS stuff to sandbox the thing in but give it
-		         some access
+	r.actions = make(map[string]actionModule)
 
-		         We can also setup a buffer for the io so we can log it, etc
+	for name, path := range actionMap {
 
-		         https://pkg.go.dev/github.com/traefik/yaegi@v0.16.1/interp#Options
+		slog.Debug("loading module", "name", name, "path", path)
 
-		*/
-	})
+		m := actionModule{
+			env: interp.New(interp.Options{GoPath: actionsPath}),
+		}
 
-	if err := r.env.Use(stdlib.Symbols); err != nil {
-		slog.Error("yaegi failed to import stdlib symbols")
-		return err
+		if err := m.env.Use(stdlib.Symbols); err != nil {
+			slog.Error("yaegi failed to import stdlib symbols")
+			return err
+		}
+
+		if err := m.env.Use(exports); err != nil {
+			slog.Error("yaegi failed to import EMRS functionality")
+			return err
+		}
+
+		_, err := m.env.EvalPath(path)
+		if err != nil {
+			slog.Error("yaegi failed to eval module file", "file", path, "error", err.Error())
+			return err
+		}
+
+		vOnInitFn, getErr := m.env.Eval(fmt.Sprintf("%s.OnInit", name))
+		if getErr == nil {
+			onInitFn := vOnInitFn.Interface().(func() error)
+			if err := onInitFn(); err != nil {
+				slog.Error("error experienced within rootFile onInit function", "error", err.Error())
+				return err
+			}
+		} else {
+			slog.Info("module does not contain an `OnInit` function", "name", name)
+		}
+
+		// ---
+
+		r.actions[name] = m
 	}
-
-	if err := r.env.Use(exports); err != nil {
-		slog.Error("yaegi failed to import EMRS functionality")
-		return err
-	}
-
-	// evaluate the root file (init.go)
-
-	_, err := r.env.EvalPath(filepath.Join(dir, rootFile))
-	if err != nil {
-		slog.Error("yaegi failed to eval root file", "rootFile", rootFile, "error", err.Error())
-		return err
-	}
-
-	// init actions
-
-	vOnInitFn, err := r.env.Eval("actions.onInit")
-	if err != nil {
-		slog.Error("failed to retrieve onInit() function", "error", err.Error())
-		return err
-	}
-
-	onInitFn := vOnInitFn.Interface().(func() error)
-
-	if err := onInitFn(); err != nil {
-		slog.Error("error experienced within rootFile onInit function", "error", err.Error())
-		return err
-	}
-
-	// retrieve handlers map
-
-	vOnData, err := r.env.Eval("actions.onData")
-	if err != nil {
-		slog.Error("failed to retrieve onInit() function", "error", err.Error())
-		return err
-	}
-
-	r.onData = vOnData.Interface().(func(string, []string, []byte) error)
 
 	return nil
 }
@@ -104,8 +93,42 @@ func (r *yaegiRunner) SubmitJob(job *Job) error {
 
 func (r *yaegiRunner) processJob(job *Job) {
 	slog.Info("processing job", "from", job.Origin, "to", job.Destination)
-	evalErr := r.onData(job.Origin, job.Destination, job.Data)
-	if evalErr != nil {
-		slog.Error("evaluateion error reported", "error", evalErr.Error())
+
+	if len(job.Destination) < 2 {
+		slog.Error("invalid destination; expected at least 'action.function'", "route-len", len(job.Destination))
+		return
 	}
+
+	actionName := job.Destination[0]
+
+	target, ok := r.actions[actionName]
+	if !ok {
+		slog.Error("unknown action for chunk in request", "name", actionName)
+		return
+	}
+
+	symbols := target.env.Symbols(actionName)
+
+	packageMap, pmOk := symbols[actionName]
+	if !pmOk {
+		slog.Error("failed to retrieve expected package from module", "expected-package", actionName)
+		return
+	}
+
+	targetFnName := job.Destination[1]
+
+	vTargetFn, ok := packageMap[targetFnName]
+
+	if !ok {
+		slog.Error("failed to locate function in action module", "module", actionName, "fn", targetFnName)
+		return
+	}
+
+	targetFn := vTargetFn.Interface().(func(string, []string, []byte) error)
+	if err := targetFn(job.Origin, job.Destination[2:], job.Data); err != nil {
+		slog.Error("error experienced while processing function call", "module", actionName, "fn", targetFnName, "error", err.Error())
+		return
+	}
+
+	slog.Debug("processing complete")
 }

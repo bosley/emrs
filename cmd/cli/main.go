@@ -8,28 +8,27 @@ import (
 	"github.com/bosley/emrs/app"
 	"github.com/bosley/emrs/badger"
 	"github.com/bosley/emrs/datastore"
+	"golang.org/x/term"
 	"gopkg.in/yaml.v3"
 	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 )
 
 const (
 	defaultServerName        = "EMRS Server"
 	defaultEnvHome           = "EMRS_HOME"
-	defaultBinding           = "127.0.0.1:8080"
+	defaultBinding           = "localhost:8080"
 	defaultStoragePath       = "storage"
-	defaultRuntimeFile       = ".emrs.pid"
 	defaultConfigName        = "server.cfg"
 	defaultUiKeyDuration     = "8760h" // 1 year
 	defaultUserGivenDuration = "4320h" // ~6 months
 
-	defaultActionsDir       = "actions"
-	defaultActionsBaseFile  = "_actions/blueprint.go"
-	defaultActionsInstalled = "init.go"
+	defaultActionsDir = "actions"
 )
 
 const (
@@ -37,197 +36,65 @@ const (
 )
 
 type Config struct {
-	Binding  string `yaml:binding`
-	Key      string `yaml:key`
-	Cert     string `yaml:cert`
-	Identity string `yaml:identity`
+	Binding  string            `yaml:binding`
+	Key      string            `yaml:key`
+	Cert     string            `yaml:cert`
+	Identity string            `yaml:identity`
+	Actions  map[string]string `yaml:actions`
 }
 
 func main() {
-
-	/*
-	   TODO:
-	       CLI Args that would be nice, and potentially required, but not required as-of-yet:
-
-	       --new-ui-key    (uses givenDuration)    Generates a new UI key for the Ring-0 user,
-	                                               this will require a sever restart, or a means
-	                                               to update the api auth used by the server at runtime.
-	                                               This might be a non-issue but since the auth is not
-	                                               implemented yet, it may require change later idk
-
-	*/
-
-	emrsHome := flag.String("home", "", "Home directory")
-	createNew := flag.Bool("new", false, "Create a new EMRS instance")
-	useForce := flag.Bool("force", false, "Force \"new\" operation, no prompting if item exists")
-	coolGuy := flag.Bool("no-prompt", false, "Don't try to be helpful during setup")
-	isRelease := flag.Bool("release", false, "Enable release mode")
-	genVouchers := flag.Int("vouchers", 0, "Enter a number >0 to generate a series of vouchers. Use with `duration.`")
-	givenDuration := flag.String("duration", defaultUserGivenDuration, "Duration to give to vouchers (ex: 1h15m)")
-
-	createAsset := flag.String("new-asset", "", "Create a new asset")
-	listAssets := flag.Bool("list-assets", false, "List all known assets")
-	removeAsset := flag.String("remove-asset", "", "Remove an asset by its UUID")
-	updateAsset := flag.String("update-asset", "", "Update an asset's name given its UUID (requires --name)")
-
-	withName := flag.String("name", "", "Set the name value for a corresponding command")
-
-	emit := flag.String("submit", "", "Submit event to a server. Format>  Asset-UUID:deceoder.proc0.proc1.proc2@https://127.0.0.1:8080")
-	withData := flag.String("data", "", "Add data to a submission")
-
-	getStatus := flag.String("stat", "", "Submit getStatus reaquest to server Format> https://127.0.0.1:8080")
-
-	down := flag.Bool("down", false, "Stop a server instance using the loaded server configuration")
-
-	// beFancy := flag.Bool("fancy", false, "Perform the action with a fancy tui") // (list assets, using bubbletea)
-
-	// panel  := flag.Bool("panel", false, "Launch the interactive TUI that requires direct access to the datastore (not via web api)
-
-	flag.Parse()
-
-	if !*isRelease {
-		slog.SetDefault(
-			slog.New(
-				slog.NewTextHandler(os.Stdout,
-					&slog.HandlerOptions{
-						Level: slog.LevelDebug,
-					})))
-	}
-
-	if *emrsHome == "" {
-		fromEnv := os.Getenv(defaultEnvHome)
-		if fromEnv == "" {
-			slog.Error("unable to determine emrs home directory from environment")
-			os.Exit(1)
-		}
-		*emrsHome = fromEnv
-	}
-
-	// Create a new EMRS instance on disk, and then exit
-	if *createNew {
-		writeNewEmrs(*emrsHome, *useForce, *coolGuy)
+	if len(os.Args) < 2 {
+		println("no arguments supplied")
 		return
 	}
 
-	// Load the configuration, and then populate the server identity badge
+	slog.SetDefault(
+		slog.New(
+			slog.NewTextHandler(os.Stdout,
+				&slog.HandlerOptions{
+					Level: slog.LevelInfo,
+				})))
 
-	cfg := getConfig(*emrsHome)
-	badge, err := badger.DecodeIdentityString(cfg.Identity)
-	if err != nil {
-		slog.Error("badger failed to decode server identity", "error", err.Error())
+	switch os.Args[1] {
+	case "server":
+		cliServer()
+		break
+	case "asset":
+		cliAsset()
+		break
+	case "action":
+		cliAction()
+		break
+	case "tokens":
+		cliTokens()
+		break
+	case "submit":
+		cliSubmit()
+		break
+	case "cnc":
+		cliCnc()
+		break
+	case "stat":
+		cliStat()
+		break
+	case "doc":
+		cliDoc()
+		break
+	default:
+		fmt.Println("unknown command", os.Args[1])
+		fmt.Println(`
+
+
+      Available commands are [server asset action tokens submit cnc stat doc]
+
+      Use '--help' with one of the above commands for more information
+
+          example:      emrs server --help
+`)
 		os.Exit(1)
 	}
-
-	if *getStatus != "" {
-		executeGetStatus(*getStatus, cfg)
-		return
-	}
-
-	// Check to see if we are just emitting an event
-
-	if *emit != "" {
-		executeSubmission(badge, cfg, *emit, *withData)
-		return
-	}
-
-	// If the user wants to generate vouchers based on the server identity,
-	// we do so here and then exist
-
-	if *genVouchers > 0 {
-		d, err := time.ParseDuration(*givenDuration)
-		if err != nil {
-			slog.Error("failed to parse duration", "error", err.Error())
-			os.Exit(1)
-		}
-		generateVouchers(badge, *genVouchers, d)
-		return
-	}
-
-	// Load the DataStore from the EMRS home directory
-
-	dataStrj, err := datastore.Load(filepath.Join(*emrsHome, defaultStoragePath))
-	if err != nil {
-		slog.Error("failed to load datastore", "error", err.Error())
-		os.Exit(1)
-	}
-
-	// Check for "DOWN"
-
-	if *down {
-		executeDown(cfg, badge, dataStrj)
-		return
-	}
-
-	// Check for asset commands
-
-	if *listAssets {
-		assets := dataStrj.GetAssets()
-		if len(assets) == 0 {
-			fmt.Println("There are no assets contained in the EMRS data storage system")
-			return
-		}
-		for i, a := range assets {
-			fmt.Printf("%6d | %s | %s\n", i, a.Id, a.DisplayName)
-		}
-		return
-	}
-	if strings.Trim(*createAsset, " ") != "" {
-		id, err := badger.GenerateId()
-		if err != nil {
-			slog.Error("badger failed to create a unique id for asset", "error", err.Error())
-			os.Exit(1)
-		}
-		if !dataStrj.AddAsset(datastore.Asset{
-			Id:          id,
-			DisplayName: *createAsset,
-		}) {
-			slog.Error("failed to add asset", "id", id, "name", *createAsset)
-			os.Exit(1)
-		}
-		return
-	}
-	if strings.Trim(*removeAsset, " ") != "" {
-		if !dataStrj.RemoveAsset(*removeAsset) {
-			slog.Error("failed to remove asset", "id", *removeAsset)
-			os.Exit(1)
-		}
-		return
-	}
-	if strings.Trim(*updateAsset, " ") != "" {
-		if !dataStrj.UpdateAsset(datastore.Asset{
-			Id:          *updateAsset,
-			DisplayName: *withName,
-		}) {
-			slog.Error("failed to add asset", "id", *updateAsset, "name", *withName)
-			os.Exit(1)
-		}
-		return
-	}
-
-	// Create the EMRS server application
-
-	emrs, launchErr := app.New(&app.Opts{
-		Badge:          badge,
-		Binding:        cfg.Binding,
-		DataStore:      dataStrj,
-		ActionsPath:    filepath.Join(*emrsHome, defaultActionsDir),
-		ActionRootFile: defaultActionsInstalled,
-	})
-
-	if launchErr != nil {
-		slog.Error("failed to create emrs application", "error", launchErr.Error())
-		os.Exit(1)
-	}
-
-	// Check if we can use HTTPS
-
-	if strings.Trim(cfg.Key, " ") != "" && strings.Trim(cfg.Cert, " ") != "" {
-		emrs.UseHttps(cfg.Key, cfg.Cert)
-	}
-
-	// RUN
-
-	emrs.Run(*isRelease)
+	return
 }
 
 func getConfig(home string) Config {
@@ -282,13 +149,6 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
 	actions := filepath.Join(home, defaultActionsDir)
 	os.MkdirAll(actions, 0755)
 
-	actionInitDest := filepath.Join(actions, defaultActionsInstalled)
-
-	if err := os.WriteFile(actionInitDest, []byte(globalActionBlueprint), 0600); err != nil {
-		slog.Error("Failed to write actions init file")
-		os.Exit(1)
-	}
-
 	oneYear, err := time.ParseDuration(defaultUiKeyDuration)
 	if err != nil {
 		slog.Error("failed to setup voucher duration")
@@ -320,8 +180,6 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
 
 	if err := os.WriteFile(filepath.Join(home, defaultConfigName), b, 0600); err != nil {
 		slog.Error("Failed to write configuration file")
-		// TODO: Its not required, but we could MOVE the existing, forced, items off
-		//        to the side in a temp folder and restore them on a failure via defer
 		os.Exit(1)
 	}
 
@@ -355,6 +213,321 @@ func writeNewEmrs(home string, force bool, noHelp bool) {
     `)
 	}
 	os.Exit(0)
+}
+
+func mustFindHome(potential string) string {
+	if potential == "" {
+		fromEnv := os.Getenv(defaultEnvHome)
+		if fromEnv == "" {
+			slog.Error("unable to determine emrs home directory from environment")
+			os.Exit(1)
+		}
+		return fromEnv
+	}
+	return potential
+}
+
+func mustLoadCfgAndBadge(home string) (Config, badger.Badge) {
+	cfg := getConfig(home)
+	badge, err := badger.DecodeIdentityString(cfg.Identity)
+	if err != nil {
+		slog.Error("badger failed to decode server identity", "error", err.Error())
+		os.Exit(1)
+	}
+	return cfg, badge
+}
+
+func mustGetPassword() []byte {
+	fmt.Print("Password: ")
+	bytepw, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		slog.Error("failed to read password", "error", err.Error())
+		os.Exit(1)
+	}
+	return bytepw
+}
+
+func cliServer() {
+	serverCmd := flag.NewFlagSet("server", flag.ExitOnError)
+	createNew := serverCmd.Bool("new", false, "Create a new EMRS instance")
+	useForce := serverCmd.Bool("force", false, "Force \"new\" operation, no prompting if item exists")
+	coolGuy := serverCmd.Bool("no-prompt", false, "Don't try to be helpful during setup")
+	isRelease := serverCmd.Bool("release", false, "Enable release mode")
+	emrsHome := serverCmd.String("home", "", "Home directory")
+
+	serverCmd.Parse(os.Args[2:])
+
+	*emrsHome = mustFindHome(*emrsHome)
+
+	if !*isRelease {
+		slog.SetDefault(
+			slog.New(
+				slog.NewTextHandler(os.Stdout,
+					&slog.HandlerOptions{
+						Level: slog.LevelDebug,
+					})))
+	}
+
+	// Create a new EMRS instance on disk, and then exit
+	if *createNew {
+		writeNewEmrs(*emrsHome, *useForce, *coolGuy)
+		return
+	}
+
+	cfg, badge := mustLoadCfgAndBadge(*emrsHome)
+
+	dataStrj, err := datastore.Load(filepath.Join(*emrsHome, defaultStoragePath))
+	if err != nil {
+		slog.Error("failed to load datastore", "error", err.Error())
+		os.Exit(1)
+	}
+
+	emrs, launchErr := app.New(&app.Opts{
+		Badge:      badge,
+		Binding:    cfg.Binding,
+		DataStore:  dataStrj,
+		ActionMap:  cfg.Actions,
+		ActionPath: filepath.Join(*emrsHome, defaultActionsDir),
+	})
+
+	if launchErr != nil {
+		slog.Error("failed to create emrs application", "error", launchErr.Error())
+		os.Exit(1)
+	}
+
+	// Check if we can use HTTPS
+
+	if strings.Trim(cfg.Key, " ") != "" && strings.Trim(cfg.Cert, " ") != "" {
+		emrs.UseHttps(cfg.Key, cfg.Cert)
+	}
+
+	// RUN
+
+	emrs.Run(*isRelease)
+}
+
+func cliAsset() {
+	assetCmd := flag.NewFlagSet("asset", flag.ExitOnError)
+	createAsset := assetCmd.String("new", "", "Create a new asset")
+	listAssets := assetCmd.Bool("list", false, "List all known assets")
+	removeAsset := assetCmd.String("remove", "", "Remove an asset by its UUID")
+	updateAsset := assetCmd.String("update", "", "Update an asset's name given its UUID (requires --name)")
+	assetName := assetCmd.String("name", "[ASSET]", "Specify the name value")
+	emrsHome := assetCmd.String("home", "", "Home directory")
+
+	assetCmd.Parse(os.Args[2:])
+
+	*emrsHome = mustFindHome(*emrsHome)
+
+	dataStrj, err := datastore.Load(filepath.Join(*emrsHome, defaultStoragePath))
+	if err != nil {
+		slog.Error("failed to load datastore", "error", err.Error())
+		os.Exit(1)
+	}
+
+	if *listAssets {
+		assets := dataStrj.GetAssets()
+		if len(assets) == 0 {
+			fmt.Println("There are no assets contained in the EMRS data storage system")
+			return
+		}
+		for i, a := range assets {
+			fmt.Printf("%6d | %s | %s\n", i, a.Id, a.DisplayName)
+		}
+		return
+	}
+	if strings.Trim(*createAsset, " ") != "" {
+		id, err := badger.GenerateId()
+		if err != nil {
+			slog.Error("badger failed to create a unique id for asset", "error", err.Error())
+			os.Exit(1)
+		}
+		if !dataStrj.AddAsset(datastore.Asset{
+			Id:          id,
+			DisplayName: *createAsset,
+		}) {
+			slog.Error("failed to add asset", "id", id, "name", *createAsset)
+			os.Exit(1)
+		}
+		return
+	}
+	if strings.Trim(*removeAsset, " ") != "" {
+		if !dataStrj.RemoveAsset(*removeAsset) {
+			slog.Error("failed to remove asset", "id", *removeAsset)
+			os.Exit(1)
+		}
+		return
+	}
+	if strings.Trim(*updateAsset, " ") != "" {
+		if !dataStrj.UpdateAsset(datastore.Asset{
+			Id:          *updateAsset,
+			DisplayName: *assetName,
+		}) {
+			slog.Error("failed to add asset", "id", *updateAsset, "name", *assetName)
+			os.Exit(1)
+		}
+		return
+	}
+
+}
+
+func cliAction() {
+	actionCmd := flag.NewFlagSet("action", flag.ExitOnError)
+	createAction := actionCmd.String("new", "", "Install an action file (requires --name)")
+	actionName := actionCmd.String("name", "", "Set the name value for a corresponding command")
+	emrsHome := actionCmd.String("home", "", "Home directory")
+
+	actionCmd.Parse(os.Args[2:])
+
+	*emrsHome = mustFindHome(*emrsHome)
+
+	cfg, _ := mustLoadCfgAndBadge(*emrsHome)
+
+	if strings.Trim(*createAction, " ") != "" {
+		if strings.Trim(*actionName, " ") == "" {
+			slog.Error("`--new-action` requires `--name`")
+			os.Exit(1)
+		}
+		executeCreateAction(cfg, *emrsHome, *actionName, *createAction)
+		return
+	}
+}
+
+func cliTokens() {
+	tokensCmd := flag.NewFlagSet("tokens", flag.ExitOnError)
+	tokenCount := tokensCmd.Int("count", 0, "Enter a number >0 to generate a series of vouchers. Use with `duration.`")
+	givenDuration := tokensCmd.String("duration", defaultUserGivenDuration, "Duration to give to vouchers (ex: 1h15m)")
+	emrsHome := tokensCmd.String("home", "", "Home directory")
+
+	tokensCmd.Parse(os.Args[2:])
+
+	*emrsHome = mustFindHome(*emrsHome)
+
+	_, badge := mustLoadCfgAndBadge(*emrsHome)
+
+	if *tokenCount > 0 {
+		d, err := time.ParseDuration(*givenDuration)
+		if err != nil {
+			slog.Error("failed to parse duration", "error", err.Error())
+			os.Exit(1)
+		}
+		generateVouchers(badge, *tokenCount, d)
+		return
+	}
+}
+
+func cliSubmit() {
+	submitCmd := flag.NewFlagSet("submit", flag.ExitOnError)
+	emrsUrl := submitCmd.String("to", "", "EMRS Url to submit do")
+	data := submitCmd.String("data", "", "Data to send along")
+	emrsHome := submitCmd.String("home", "", "Home directory")
+
+	submitCmd.Parse(os.Args[2:])
+
+	*emrsHome = mustFindHome(*emrsHome)
+
+	if strings.Trim(*emrsUrl, " ") == "" {
+		slog.Error("fail. command requires --to")
+		os.Exit(1)
+	}
+
+	cfg, badge := mustLoadCfgAndBadge(*emrsHome)
+
+	executeSubmission(badge, cfg, *emrsUrl, *data)
+}
+
+func cliCnc() {
+	cncCmd := flag.NewFlagSet("cnc", flag.ExitOnError)
+	down := cncCmd.Bool("down", false, "Shutdown local server")
+	updateUiKey := cncCmd.Bool("change-ui-key", false, "Change out the UI Key")
+	emrsHome := cncCmd.String("home", "", "Home directory")
+
+	cncCmd.Parse(os.Args[2:])
+
+	*emrsHome = mustFindHome(*emrsHome)
+
+	dataStrj, err := datastore.Load(filepath.Join(*emrsHome, defaultStoragePath))
+	if err != nil {
+		slog.Error("failed to load datastore", "error", err.Error())
+		os.Exit(1)
+	}
+
+	o, e := dataStrj.GetOwner()
+	if e != nil {
+		slog.Error("failed to retrieve owner for auth", "error", e.Error())
+		os.Exit(1)
+	}
+
+	{
+		userInput := mustGetPassword()
+
+		println("\r\n")
+
+		if err := badger.RawIsHashMatch(userInput, []byte(o.Hash)); err != nil {
+			slog.Error("authentication error", "error", err.Error())
+			os.Exit(7)
+		}
+		slog.Info("authentication complete")
+	}
+
+	if *down {
+		slog.Debug("shutdown request")
+		cfg, badge := mustLoadCfgAndBadge(*emrsHome)
+		executeDown(cfg, badge, dataStrj)
+		return
+	}
+
+	if *updateUiKey {
+
+		_, badge := mustLoadCfgAndBadge(*emrsHome)
+
+		oneYear, err := time.ParseDuration(defaultUiKeyDuration)
+		if err != nil {
+			slog.Error("failed to setup key duration")
+			os.Exit(1)
+		}
+
+		voucher, err := badger.NewVoucher(badge, oneYear)
+		if err != nil {
+			slog.Error("failed to generate ui key")
+			os.Exit(1)
+		}
+
+		if !dataStrj.UpdateOwnerUiKey(voucher) {
+			slog.Error("failed to store new ui key")
+			os.Exit(1)
+		}
+		fmt.Println("key updated")
+		return
+	}
+
+	fmt.Println("no valid arguments given to cnc")
+	return
+}
+
+func cliStat() {
+	statCmd := flag.NewFlagSet("stat", flag.ExitOnError)
+
+	binding := statCmd.String("at", "", "Set binding of the targeted server > format https://example.com:8080")
+	emrsHome := statCmd.String("home", "", "Home directory")
+
+	statCmd.Parse(os.Args[2:])
+
+	*emrsHome = mustFindHome(*emrsHome)
+
+	if strings.Trim(*binding, " ") == "" {
+		slog.Error("fail. stat requires --binding")
+		os.Exit(1)
+	}
+
+	cfg, _ := mustLoadCfgAndBadge(*emrsHome)
+
+	executeGetStatus(*binding, cfg)
+}
+
+func cliDoc() {
+	slog.Error("NOT YET IMPLEMENTED")
+	os.Exit(1)
 }
 
 func copyFile(src, dst string) (int64, error) {
@@ -508,5 +681,34 @@ func executeDown(cfg Config, badge badger.Badge, db datastore.DataStore) {
 		os.Exit(1)
 	}
 
-	fmt.Println("shutdown request sent")
+	fmt.Println("complete")
+}
+
+func executeCreateAction(cfg Config, home string, name string, location string) {
+	actionsDir := filepath.Join(home, defaultActionsDir)
+	targetName := filepath.Base(location)
+	destination := filepath.Join(actionsDir, targetName)
+
+	slog.Debug("create action", "home", home, "name", name, "source", location, "destination", destination)
+
+	size, err := copyFile(location, destination)
+	if err != nil {
+		slog.Error("failed to copy target file", "source", location, "destination", destination, "error", err.Error())
+		os.Exit(1)
+	}
+	slog.Debug("copy success", "K", size)
+
+	// Now we add it to config
+	cfg.Actions[name] = destination
+
+	b, e := yaml.Marshal(&cfg)
+	if e != nil {
+		slog.Error("Failed to encode new config", "error", e.Error())
+		os.Exit(1)
+	}
+
+	if err := os.WriteFile(filepath.Join(home, defaultConfigName), b, 0600); err != nil {
+		slog.Error("Failed to write configuration file")
+		os.Exit(1)
+	}
 }
