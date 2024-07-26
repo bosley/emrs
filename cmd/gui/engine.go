@@ -18,59 +18,54 @@ type View interface {
 	Update(cfg WindowConfig)
 }
 
-type Engine struct {
-	UserData interface{}
+var Views map[string]View
 
-	viewQueue  []View
-	changeView bool
+type ViewUpdateFn func(view View)
+
+type Engine struct {
+  activeView View
 	window     *app.Window
 }
 
 func MustCreateEngine() *Engine {
 	eng := Engine{
-		viewQueue: make([]View, 0),
+    activeView: nil,
 		window:    new(app.Window),
 	}
 	return &eng
 }
 
-func (engine *Engine) PushView(v View) *Engine {
-	engine.viewQueue = append(engine.viewQueue, v)
-	return engine
-}
-
-func (engine *Engine) IndViewClosed() {
-	slog.Info("view closed", "name", engine.viewQueue[0])
-	engine.viewQueue = engine.viewQueue[1:]
-	if len(engine.viewQueue) == 0 {
-		slog.Info("complete")
-		os.Exit(0)
-	}
+func (engine *Engine) GetViewUpdateFn() ViewUpdateFn {
+  return func(view View) {
+    engine.activeView = view
+  }
 }
 
 func (engine *Engine) Run() {
 	go func() {
 		theme := material.NewTheme()
 		var ops op.Ops
-
 		for {
-			if engine == nil || len(engine.viewQueue) == 0 {
+			if engine == nil || engine.activeView == nil {
 				slog.Debug("view-exchange thread closing")
 				return
 			}
 
 			switch event := engine.window.Event().(type) {
 			case app.DestroyEvent:
-				engine.IndViewClosed()
-				break
+        slog.Info("close event")
+        os.Exit(0)
 			case app.FrameEvent:
 				cfg := WindowConfig{
 					Gtx:   app.NewContext(&ops, event),
 					Theme: theme,
 				}
-				engine.viewQueue[0].Update(cfg)
+        if engine.activeView == nil {
+          slog.Error("no active view")
+          continue
+        }
+	      engine.activeView.Update(cfg)
 				event.Frame(cfg.Gtx.Ops)
-				break
 			}
 		}
 	}()

@@ -9,11 +9,15 @@ import (
 )
 
 type LoginView struct {
+
+  updateView  ViewUpdateFn    // updateView(&myView{})
 }
 
-func NewLoginView(emrs EmrsInfo) View {
+func NewLoginView(emrs EmrsInfo, updateFn ViewUpdateFn) View {
 
-	login := &LoginView{}
+	login := &LoginView{
+    updateView: updateFn,
+  }
 
 	return login
 }
