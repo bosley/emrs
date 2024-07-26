@@ -102,7 +102,6 @@ type EmrsInfo struct {
 	Badge badger.Badge
 }
 
-
 func main() {
 
 	slog.SetDefault(
@@ -112,7 +111,7 @@ func main() {
 					Level: slog.LevelDebug,
 				})))
 
-  Views = make(map[string]View) // From engine.go (will be exported later)
+	Views = make(map[string]View) // From engine.go (will be exported later)
 
 	home := mustFindHome("")
 
@@ -125,16 +124,15 @@ func main() {
 
 	engine := MustCreateEngine()
 
-  viewChanger := engine.GetViewUpdateFn()
+	viewChanger := engine.GetViewUpdateFn()
 
-  // TODO: 
-  //        Add the other views here
+	// TODO:
+	//        Add the other views here
 
-  Views["login"] = NewLoginView(info, viewChanger)
+	Views["login"] = NewLoginView(info, viewChanger)
+	Views["dashboard"] = NewDashboardView(info, viewChanger)
 
-
-
-  viewChanger(Views["login"])
+	viewChanger(Views["login"])
 
 	engine.Run()
 }

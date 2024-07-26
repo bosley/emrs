@@ -1,12 +1,12 @@
 package main
 
 import (
-	"os"
-	"log/slog"
 	"gioui.org/app"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/widget/material"
+	"log/slog"
+	"os"
 )
 
 type WindowConfig struct {
@@ -23,22 +23,22 @@ var Views map[string]View
 type ViewUpdateFn func(view View)
 
 type Engine struct {
-  activeView View
+	activeView View
 	window     *app.Window
 }
 
 func MustCreateEngine() *Engine {
 	eng := Engine{
-    activeView: nil,
-		window:    new(app.Window),
+		activeView: nil,
+		window:     new(app.Window),
 	}
 	return &eng
 }
 
 func (engine *Engine) GetViewUpdateFn() ViewUpdateFn {
-  return func(view View) {
-    engine.activeView = view
-  }
+	return func(view View) {
+		engine.activeView = view
+	}
 }
 
 func (engine *Engine) Run() {
@@ -53,18 +53,18 @@ func (engine *Engine) Run() {
 
 			switch event := engine.window.Event().(type) {
 			case app.DestroyEvent:
-        slog.Info("close event")
-        os.Exit(0)
+				slog.Info("close event")
+				os.Exit(0)
 			case app.FrameEvent:
 				cfg := WindowConfig{
 					Gtx:   app.NewContext(&ops, event),
 					Theme: theme,
 				}
-        if engine.activeView == nil {
-          slog.Error("no active view")
-          continue
-        }
-	      engine.activeView.Update(cfg)
+				if engine.activeView == nil {
+					slog.Error("no active view")
+					continue
+				}
+				engine.activeView.Update(cfg)
 				event.Frame(cfg.Gtx.Ops)
 			}
 		}

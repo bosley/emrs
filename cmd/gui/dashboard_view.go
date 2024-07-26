@@ -12,26 +12,26 @@ import (
 	"gioui.org/widget"
 )
 
-type LoginView struct {
+type DashboardView struct {
 	changeViewFn ViewUpdateFn // changeViewFn(&myView{})
 
 	changeViewBttn widget.Clickable
 }
 
-func NewLoginView(emrs EmrsInfo, updateFn ViewUpdateFn) View {
+func NewDashboardView(emrs EmrsInfo, updateFn ViewUpdateFn) View {
 
-	view := &LoginView{
+	view := &DashboardView{
 		changeViewFn: updateFn,
 	}
 
 	return view
 }
 
-func (view *LoginView) Update(cfg WindowConfig) {
+func (view *DashboardView) Update(cfg WindowConfig) {
 
 	if view.changeViewBttn.Clicked(cfg.Gtx) {
-		slog.Info("changing to dashboard")
-		view.changeViewFn(Views["dashboard"])
+		slog.Info("changing to login")
+		view.changeViewFn(Views["login"])
 		return
 	}
 
@@ -41,8 +41,8 @@ func (view *LoginView) Update(cfg WindowConfig) {
 	}.Layout(cfg.Gtx,
 		layout.Rigid(
 			func(ctx layout.Context) layout.Dimensions {
-				title := material.H1(cfg.Theme, "LOGIN")
-				colr := color.NRGBA{R: 0, G: 0, B: 144, A: 255}
+				title := material.H1(cfg.Theme, "DASHBOARD")
+				colr := color.NRGBA{R: 144, G: 0, B: 0, A: 255}
 				title.Color = colr
 
 				title.Alignment = text.Middle
@@ -59,7 +59,7 @@ func (view *LoginView) Update(cfg WindowConfig) {
 				}
 				return margins.Layout(cfg.Gtx,
 					func(ctx layout.Context) layout.Dimensions {
-						btn := material.Button(cfg.Theme, &view.changeViewBttn, "to dashboard")
+						btn := material.Button(cfg.Theme, &view.changeViewBttn, "to login")
 						return btn.Layout(ctx)
 					},
 				)
