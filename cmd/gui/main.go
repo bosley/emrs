@@ -1,15 +1,10 @@
 package main
 
 import (
-	"image/color"
-	"log"
+	"github.com/bosley/emrs/badger"
+	"github.com/bosley/emrs/datastore"
+	"log/slog"
 	"os"
-
-	"gioui.org/app"
-	"gioui.org/op"
-	"gioui.org/text"
-	"gioui.org/widget/material"
-
 )
 
 /*
@@ -100,45 +95,33 @@ structure:
 
 */
 
-
-func main() {
-	go func() {
-		window := new(app.Window)
-		err := run(window)
-		if err != nil {
-			log.Fatal(err)
-		}
-		os.Exit(0)
-	}()
-	app.Main()
+type EmrsInfo struct {
+	Home  string
+	Cfg   Config
+	Ds    datastore.DataStore
+	Badge badger.Badge
 }
 
-func run(window *app.Window) error {
-	theme := material.NewTheme()
-	var ops op.Ops
-	for {
-		switch e := window.Event().(type) {
-		case app.DestroyEvent:
-			return e.Err
-		case app.FrameEvent:
-			// This graphics context is used for managing the rendering state.
-			gtx := app.NewContext(&ops, e)
+func main() {
 
-			// Define an large label with an appropriate text:
-			title := material.H1(theme, "Hello, Gio")
+	slog.SetDefault(
+		slog.New(
+			slog.NewTextHandler(os.Stdout,
+				&slog.HandlerOptions{
+					Level: slog.LevelDebug,
+				})))
 
-			// Change the color of the label.
-			maroon := color.NRGBA{R: 127, G: 0, B: 0, A: 255}
-			title.Color = maroon
+	home := mustFindHome("")
 
-			// Change the position of the label.
-			title.Alignment = text.Middle
-
-			// Draw the label to the graphics context.
-			title.Layout(gtx)
-
-			// Pass the drawing operations to the GPU.
-			e.Frame(gtx.Ops)
-		}
+	info := EmrsInfo{
+		Home: home,
 	}
+
+	info.Cfg, info.Badge = mustLoadCfgAndBadge(home)
+	info.Ds = mustLoadDefaultDataStore(home)
+
+	engine := MustCreateEngine().
+		PushView(NewLoginView(info))
+
+	engine.Run()
 }

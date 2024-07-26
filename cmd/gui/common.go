@@ -1,15 +1,15 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/bosley/emrs/badger"
 	"github.com/bosley/emrs/datastore"
 	"gopkg.in/yaml.v3"
 	"log/slog"
 	"os"
-  "time"
-  "fmt"
-  "encoding/json"
 	"path/filepath"
+	"time"
 )
 
 const (
@@ -69,8 +69,8 @@ func mustLoadDataStore(dir string) datastore.DataStore {
 }
 
 func mustLoadDefaultDataStore(home string) datastore.DataStore {
-  return mustLoadDataStore(
-    filepath.Join(home, defaultStoragePath))
+	return mustLoadDataStore(
+		filepath.Join(home, defaultStoragePath))
 }
 
 func getConfig(home string) Config {
